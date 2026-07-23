@@ -1,6 +1,6 @@
 import random
 options = ["rock", "paper", "scissors"]
-
+#h
 global machinechoice
 global playerchoice
 
