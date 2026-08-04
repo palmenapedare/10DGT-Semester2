@@ -24,10 +24,13 @@ cursor.execute('''
         origin TEXT,
         destination TEXT,
         departure_time TEXT,
+        date TEXT
+        time TEXT
         capacity INTEGER,
         price INTEGER
     )
 ''')
+#added date and time
 
 cursor.execute('''
     CREATE TABLE passengers (
@@ -60,13 +63,15 @@ for _ in range(12): ##generate 12 flights
     
     # Generate a random future flight time inside a window of 2026
     dept_time = fake.future_datetime(end_date='+30d').strftime('%Y-%m-%d %H:%M') ##??
+    dept_date = fake.future_date(end_date='+30d').strftime('%Y/%m/%d') ##my code
+    dept_time2 = fake.future_time(end_date='+30d').strftime('%H:%M') ##also my code
     price = random.choice([79, 99, 129, 149, 199, 249])
     capacity = random.choice([150, 180, 220]) # Standard Airbus/Boeing sizes
     
     cursor.execute('''
-        INSERT INTO flights (origin, destination, departure_time, capacity, price)
+        INSERT INTO flights (origin, destination, departure_time, departure_date, capacity, price)
         VALUES (?, ?, ?, ?, ?)
-    ''', (origin, destination, dept_time, capacity, price))
+    ''', (origin, destination, dept_time2, dept_date, capacity, price)) ##updated this and l72
 
 # 4. Generate Passengers Data
 print("-> Generating 50 unique passengers...")
