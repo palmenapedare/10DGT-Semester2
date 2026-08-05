@@ -66,7 +66,7 @@
                     <div>
                         <span class="text-muted small">Flight ID: #{{ flight.id }}</span> <!-- double curly brackets = print -->
                         <h5 class="mb-0">{{ flight.time }} - {{ flight.origin }} to {{ flight.destination }}</h5> <!-- in db date/time conjoined (first 10 characters is date) -->
-                        <p class="mb-0 text-muted">{{ flight.date }} | Direct</p>
+                        <p class="mb-0 text-muted">{{ flight.departure_time[0:10] }} | Direct</p>
                     </div>
                     <div class="text-end">
                         <div class="price-tag">${{ flight.price }}</div>
