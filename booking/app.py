@@ -56,11 +56,12 @@ def book_flight(flight_id):
             VALUES (?, ?, ?)
         ''', (flight_id, passenger_id, '12A'))
 
+        booking_id = cursor.lastrowid
         conn.commit()
         conn.close()
 
         # 4. Redirect back to the homepage after a successful database save
-        return redirect(url_for('index'))
+        return redirect(url_for('booking_confirmation', booking_id=booking_id))
 
     ## if they didn't come from booking form page
     else:
@@ -71,6 +72,26 @@ def book_flight(flight_id):
         # Render the template and pass the specific flight object to it
         return render_template('booking.html', flight=flight)
 
+@app.route('/confirmation/<int:booking_id>')
+def booking_confirmation(booking_id):
+    conn = get_db_connection()
+    
+    # SQL JOIN to grab Passenger, Flight, and Booking details in one query
+    query = '''
+        SELECT b.booking_id, b.seat_assignment, p.first_name, p.last_name, 
+               f.origin, f.destination, f.departure_time, f.flight_id
+        FROM bookings b
+        JOIN passengers p ON b.passenger_id = p.passenger_id
+        JOIN flights f ON b.flight_id = f.flight_id
+        WHERE b.booking_id = ?
+    '''
+    booking_details = conn.execute(query, (booking_id,)).fetchone()
+    conn.close()
+    
+    if booking_details is None:
+        return "Booking Not Found", 404
+        
+    return render_template('booking_confirmation.html', booking=booking_details)
 
 if __name__ == '__main__':
     app.run(debug=True)
