@@ -1,7 +1,9 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, session
 import sqlite3
 
 app = Flask(__name__)
+
+app.secret_key = 'secretkey'
 
 def get_db_connection():
     conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
@@ -38,6 +40,7 @@ def book_flight(flight_id):
         last = request.form.get('last_name')
         email = request.form.get('email')
         passport = request.form.get('passport')
+        session['client'] = first, last, email, passport
 
         # 2. Insert the customer into the passengers table securely using tuple syntax
         cursor = conn.cursor()
@@ -55,6 +58,9 @@ def book_flight(flight_id):
             INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
             VALUES (?, ?, ?)
         ''', (flight_id, passenger_id, '12A'))
+        session['booking'] = []
+        session['booking'].append(flight_id)
+        session.modified = True
 
         booking_id = cursor.lastrowid
         conn.commit()
@@ -85,6 +91,7 @@ def booking_confirmation(booking_id):
         JOIN flights f ON b.flight_id = f.flight_id
         WHERE b.booking_id = ?
     '''
+
     booking_details = conn.execute(query, (booking_id,)).fetchone()
     conn.close()
     
@@ -93,5 +100,14 @@ def booking_confirmation(booking_id):
         
     return render_template('booking_confirmation.html', booking=booking_details)
 
+@app.route('/myflights')
+def myflights():
+    return render_template('myflights.html')
+
+@app.route('/delete_client')
+def delete_client():
+    session.pop('client', default=None)
+    #return 'session deleted page? or back to search'?
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8000)

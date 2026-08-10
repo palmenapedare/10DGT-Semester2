@@ -1,0 +1,30 @@
+.title {
+    color: darkgreen;
+    font-size: 200%;
+    font-family: "Courier New", monospace, sans-serif;
+    height: 50px;
+    width: 100%;
+    padding: 5px;
+    border: 2px double darkgreen;
+    margin: 5px;
+    position: sticky; top: 10px;
+}
+
+.directory {
+    color:cadetblue;
+    font-size: 150%;
+    font-family: "Courier New", monospace, sans-serif;
+}
+
+#carouselExample {
+    width: 90%;
+    max-width: 800px;
+    margin: 0 auto;      
+} */
+
+.carousel-inner .carousel-item img {
+    width: 90%;
+    height: 600px;
+    object-fit: cover;
+    border: 2px solid darkgreen;
+}
