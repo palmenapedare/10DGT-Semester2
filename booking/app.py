@@ -3,7 +3,15 @@ import sqlite3
 
 app = Flask(__name__)
 
-app.secret_key = 'secretkey'
+session['currentsession'] = {
+    'first': first_name,
+    'last': last_name,
+    'email': email,
+    'passport': passport_num
+    }
+
+global currentusernew
+currentusernew = True
 
 def get_db_connection():
     conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
@@ -29,6 +37,24 @@ def index():
     conn.close() ## remember to close connection as otherwise leaves db insecure
     return render_template('index.html', flights=db_flights)
 
+#def checkuser():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = """
+        SELECT * FROM passengers
+        WHERE first = ? and last = ? and email = ? and passport = ?
+    """
+            #session['client'] = first, last, email, passport
+
+    cursor.execute(query (first, last, email, passport))
+    passenger_id = cursor.fetchone()
+    conn.close()
+
+    if passenger_id:
+        return True
+    else:
+        return False
+
 ## e.g. /book/Q3540
 @app.route('/book/<int:flight_id>', methods=['GET', 'POST'])
 def book_flight(flight_id):
@@ -36,56 +62,50 @@ def book_flight(flight_id):
 
     if request.method == 'POST':
         # 1. Capture the form text inputs using the HTML 'name' attributes
-        first = request.form.get('first_name')
-        last = request.form.get('last_name')
-        email = request.form.get('email')
-        passport = request.form.get('passport')
-
-        def checkuserexists():
-            cursor = conn.cursor()
-            query = """
-                SELECT * FROM passengers
-                WHERE first = ? and last = ? and email = ? and passport = ?
-            """
-            #session['client'] = first, last, email, passport
-
-            cursor.execute(query (first, last, email, passport))
-            passenger_id = cursor.fetchone()
-            conn.close()
-
-            if passenger_id:
-                return True
-            else:
-                return False
+        if currentusernew == False:
+            first = first
+            last = last
+            email = email
+            passport = passport
+            currentusernew = False
+            cursor.execute("""
+                SELECT passenger_id FROM passengers WHERE email = ?,
+                """, (email))
+            passenger = cursor.fetchone()
+            passenger_id = passenger['passenger_id']
+        
+        else:
+            first = request.form.get('first_name')
+            last = request.form.get('last_name')
+            email = request.form.get('email')
+            passport = request.form.get('passport')
+            currentuser = "first + last + email"
+            currentusernew = False
 
         # 2. Insert the customer into the passengers table securely using tuple syntax
-       
-        if checkuserexists(False):
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO passengers (first_name, last_name, email, passport_num)
-                VALUES (?, ?, ?, ?)
-            ''', (first, last, email, passport))
         
-            # Grab the auto-generated passenger_id of the person we just inserted
-            passenger_id = cursor.lastrowid
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO passengers (first_name, last_name, email, passport_num)
+            VALUES (?, ?, ?, ?)
+        ''', (first, last, email, passport))
+        
+        # Grab the auto-generated passenger_id of the person we just inserted
+        passenger_id = cursor.lastrowid
 
         # 3. Create a matching record in the bookings table to link passenger to flight
         # For now, we will assign a random seat placeholder like '12A'
-            cursor.execute('''
-                INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
-                VALUES (?, ?, ?)
-            ''', (flight_id, passenger_id, '12A'))
+        cursor.execute('''
+            INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
+            VALUES (?, ?, ?)
+        ''', (flight_id, passenger_id, '12A'))
 
-            if 'flights' not in session:
-                session['client']
-
-            booking_id = cursor.lastrowid
-            conn.commit()
-            conn.close()
+        booking_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
 
         # 4. Redirect back to the homepage after a successful database save
-            return redirect(url_for('booking_confirmation', booking_id=booking_id))
+        return redirect(url_for('booking_confirmation', booking_id=booking_id))
 
     ## if they didn't come from booking form page
     else:
@@ -99,16 +119,21 @@ def book_flight(flight_id):
 @app.route('/confirmation/<int:booking_id>')
 def booking_confirmation(booking_id):
     conn = get_db_connection()
-    
-    # SQL JOIN to grab Passenger, Flight, and Booking details in one query
-    query = '''
-        SELECT b.booking_id, b.seat_assignment, p.first_name, p.last_name, 
-               f.origin, f.destination, f.departure_time, f.flight_id
-        FROM bookings b
-        JOIN passengers p ON b.passenger_id = p.passenger_id
-        JOIN flights f ON b.flight_id = f.flight_id
-        WHERE b.booking_id = ?
-    '''
+
+    if currentusernew == True:
+        # SQL JOIN to grab Passenger, Flight, and Booking details in one query
+        query = '''
+            SELECT b.booking_id, b.seat_assignment, p.first_name, p.last_name, 
+                   f.origin, f.destination, f.departure_time, f.flight_id
+            FROM bookings b
+            JOIN passengers p ON b.passenger_id = p.passenger_id
+            JOIN flights f ON b.flight_id = f.flight_id
+            WHERE b.booking_id = ?
+        '''
+    elif currentusernew == False:
+        query = '''
+            SELECT b.booking_id, b.seat_assignment, f.origin
+        '''
 
     booking_details = conn.execute(query, (booking_id,)).fetchone()
     conn.close()
