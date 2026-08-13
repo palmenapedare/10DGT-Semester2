@@ -40,41 +40,59 @@ def book_flight(flight_id):
         last = request.form.get('last_name')
         email = request.form.get('email')
         passport = request.form.get('passport')
-        session['client'] = first, last, email, passport
+
+        def checkuserexists():
+            cursor = conn.cursor()
+            query = """
+                SELECT * FROM passengers
+                WHERE first = ? and last = ? and email = ? and passport = ?
+            """
+            #session['client'] = first, last, email, passport
+
+            cursor.execute(query (first, last, email, passport))
+            passenger_id = cursor.fetchone()
+            conn.close()
+
+            if passenger_id:
+                return True
+            else:
+                return False
 
         # 2. Insert the customer into the passengers table securely using tuple syntax
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO passengers (first_name, last_name, email, passport_num)
-            VALUES (?, ?, ?, ?)
-        ''', (first, last, email, passport))
+       
+        if checkuserexists(False):
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO passengers (first_name, last_name, email, passport_num)
+                VALUES (?, ?, ?, ?)
+            ''', (first, last, email, passport))
         
-        # Grab the auto-generated passenger_id of the person we just inserted
-        passenger_id = cursor.lastrowid
+            # Grab the auto-generated passenger_id of the person we just inserted
+            passenger_id = cursor.lastrowid
 
         # 3. Create a matching record in the bookings table to link passenger to flight
         # For now, we will assign a random seat placeholder like '12A'
-        cursor.execute('''
-            INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
-            VALUES (?, ?, ?)
-        ''', (flight_id, passenger_id, '12A'))
-        session['booking'] = []
-        session['booking'].append(flight_id)
-        session.modified = True
+            cursor.execute('''
+                INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
+                VALUES (?, ?, ?)
+            ''', (flight_id, passenger_id, '12A'))
 
-        booking_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
+            if 'flights' not in session:
+                session['client']
+
+            booking_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
 
         # 4. Redirect back to the homepage after a successful database save
-        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+            return redirect(url_for('booking_confirmation', booking_id=booking_id))
 
     ## if they didn't come from booking form page
     else:
         # GET Request: Fetch the details of the specific flight to show on the form page
         flight = conn.execute('SELECT * FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()
         conn.close()
-        
+
         # Render the template and pass the specific flight object to it
         return render_template('booking.html', flight=flight)
 
@@ -102,7 +120,9 @@ def booking_confirmation(booking_id):
 
 @app.route('/myflights')
 def myflights():
-    return render_template('myflights.html')
+    conn = get_db_connection()
+    db_flights = conn.execute('SELECT * FROM flights').fetchall()
+    return render_template('myflights.html',)
 
 @app.route('/delete_client')
 def delete_client():
