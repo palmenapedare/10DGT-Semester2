@@ -21,10 +21,10 @@
 
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#" style="color: var(--jetstar-orange);">SKYBOUND</a>
+        <a class="navbar-brand fw-bold" href="index.html" style="color: var(--jetstar-orange);">SKYBOUND</a>
         <div class="navbar-nav ms-auto">
-            <a class="nav-link active" href="#">Flights</a>
-            <a class="nav-link" href="#">My Bookings</a>
+            <a class="nav-link active" href="index.html">Flights</a>
+            <a class="nav-link" href="myflights.html">My Bookings</a>
             <a class="nav-link btn btn-outline-dark ms-lg-3" href="#">Admin Login</a>
         </div>
     </div>
@@ -33,6 +33,9 @@
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
         <h1>Where to next?</h1> <!-- start of rendered info -->
+        {% for i in usr %}
+            <p>Welcome, {{ i }}!</p>
+        {% endfor %}
     </div>
 </div>
 
