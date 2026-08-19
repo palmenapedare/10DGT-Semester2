@@ -9,7 +9,7 @@
         :root { --jetstar-orange: #ff5100; --bg-light: #f4f4f4; }
         body { background-color: var(--bg-light); font-family: 'Segoe UI', Roboto, sans-serif; }
         .navbar { background-color: white; border-bottom: 3px solid var(--jetstar-orange); }
-        .hero-search { background: rgb(164, 53, 53); padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -50px; }
+        .hero-search { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -50px; }
         .btn-orange { background-color: var(--jetstar-orange); color: white; font-weight: bold; }
         .btn-orange:hover { background-color: white; color: white; }
         .flight-card { border: none; border-left: 5px solid var(--jetstar-orange); transition: transform 0.2s; }
@@ -33,9 +33,7 @@
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
         <h1>Where to next?</h1> <!-- start of rendered info -->
-        {% for i in usr %}
-            <p>Welcome, {{ i }}!</p>
-        {% endfor %}
+        <p>Welcome, {{ session.get('first', '') }} {{ session.get('last', '') }}!</p>
     </div>
 </div>
 
@@ -44,16 +42,29 @@
         <form class="row g-3">
             <div class="col-md-4">
                 <label class="form-label fw-bold">From</label>
-                <select class="form-select"><option>Adelaide (ADL)</option></select>
+                <select name="origin" class="form-select">
+                    <option value="">Select Origin</option>
+                    {% for city in cities %}
+                        <option value="{{ city }}"> {{ city }}</option>"    
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="col-md-4">
                 <label class="form-label fw-bold">To</label>
-                <select class="form-select"><option>Select Destination...</option></select>
+               <select name="origin" class="form-select">
+                    <option value="">Select Destination</option>
+                    {% for dest in dests %}
+                        <option value="{{ dest }}"> {{ dest }}</option>"    
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="col-md-3">
                 <label class="form-label fw-bold">Date</label>
                 <input type="date" class="form-control">
             </div>
+            
             <div class="col-md-1 d-flex align-items-end">
                 <button type="submit" class="btn btn-orange w-100">Go</button>
             </div>

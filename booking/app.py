@@ -23,13 +23,24 @@ def get_all_cities():
     conn.close()
     return db_cities
 
+def get_all_destinations():
+    # Fetches a clean, sorted list of all unique destination cities in the database.
+    conn = get_db_connection()
+    destination_query = 'SELECT DISTINCT destination FROM flights ORDER BY origin ASC' #ascending
+
+    # Extract the string value from each row row['origin']
+    db_dests = [row['destination'] for row in conn.execute(destination_query).fetchall()]
+    conn.close()
+    return db_dests
+
 ## wtf is a route
 @app.route('/') ##'/' == homepage/dashboard #function sitting under route loads when go to route. when sitting by itself (see above), tool to use when needed
 def index():
     conn = get_db_connection()
     db_flights = conn.execute('SELECT * FROM flights').fetchall()
+    cities = get_all_cities()
     conn.close() ## remember to close connection as otherwise leaves db insecure
-    return render_template('index.html', flights=db_flights)
+    return render_template('index.html', flights=db_flights, cities=cities, dests=dests)
 
 @app.route('/user', methods=['GET', 'POST'])
 def user():
@@ -37,12 +48,8 @@ def user():
     if request.method == 'POST':
         first = request.form.get('first_name').strip()
         last = request.form.get('last_name').strip()
-        session["last"] = last
         email = request.form.get('email').strip()
-        session["email"] = email
         passport = request.form.get('passport').strip()
-        session["passport"] = passport
-        loggedin = True
         print("Session data set!")
 
         #if not all(first, last, email, passport):
