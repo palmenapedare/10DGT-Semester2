@@ -84,6 +84,11 @@ def user():
     else:
         return render_template('login.html')
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return render_template('logout.html')
+
 ## e.g. /book/Q3540
 @app.route('/book/<int:flight_id>', methods=['GET', 'POST'])
 def book_flight(flight_id):
