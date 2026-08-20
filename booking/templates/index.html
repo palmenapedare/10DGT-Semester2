@@ -33,7 +33,11 @@
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
         <h1>Where to next?</h1> <!-- start of rendered info -->
-        <p>Welcome, {{ session.get('first', '') }} {{ session.get('last', '') }}!</p>
+        {% if session %}
+            <p>Welcome, {{ session.get('first', '') }} {{ session.get('last', '') }}!</p>
+        {% else %}
+            <p>Welcome!</p>
+        {% endif %}
     </div>
 </div>
 
@@ -45,17 +49,17 @@
                 <select name="origin" class="form-select">
                     <option value="">Select Origin</option>
                     {% for city in cities %}
-                        <option value="{{ city }}"> {{ city }}</option>"    
+                        <option value="{{ city }}"> {{ city }}</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-bold">To</label>
-               <select name="origin" class="form-select">
+               <select name="destination" class="form-select">
                     <option value="">Select Destination</option>
                     {% for dest in dests %}
-                        <option value="{{ dest }}"> {{ dest }}</option>"    
+                        <option value="{{ dest }}" {% if dest == selected_destination %}selected{% endif %}>{{ dest }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -74,21 +78,21 @@
     <h3 class="mb-4">Available Flights</h3>
     <div class="row">
         {% for flight in flights %} <!-- loop for however many flights in flight db -->
-        <div class="col-12 mb-3">
-            <div class="card flight-card shadow-sm"> <!-- flight card (list of info) seen on website -->
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="text-muted small">Flight ID: #{{ flight.id }}</span> <!-- double curly brackets = print -->
-                        <h5 class="mb-0">{{ flight.time }} - {{ flight.origin }} to {{ flight.destination }}</h5> <!-- in db date/time conjoined (first 10 characters is date) -->
-                        <p class="mb-0 text-muted">{{ flight.departure_time[0:10] }} | Direct</p>
-                    </div>
-                    <div class="text-end">
-                        <div class="price-tag">${{ flight.price }}</div>
-                        <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">Book</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->
+            <div class="col-12 mb-3">
+                <div class="card flight-card shadow-sm"> <!-- flight card (list of info) seen on website -->
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small">Flight ID: #{{ flight.id }}</span> <!-- double curly brackets = print -->
+                            <h5 class="mb-0">{{ flight.time }} - {{ flight.origin }} to {{ flight.destination }}</h5> <!-- in db date/time conjoined (first 10 characters is date) -->
+                            <p class="mb-0 text-muted">{{ flight.departure_time[0:10] }} | Direct</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="price-tag">${{ flight.price }}</div>
+                            <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">Book</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         {% endfor %}
     </div>
 </div>

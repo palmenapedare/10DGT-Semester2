@@ -37,27 +37,53 @@
             <div class="booking-box">
                 <h3 class="mb-4 fw-bold">Passenger Details</h3>
                 
-                <form method="POST">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">First Name</label>
-                            <input type="text" class="form-control" name="first_name" required placeholder="e.g. Jane">
+                {% if session %}
+                    <form method="POST">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">First Name</label>
+                                <input type="text" class="form-control" name="first_name" value="{{ session.get('first', '') }}" autocomplete="given-name" required placeholder="e.g. Jane">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Last Name</label>
+                                <input type="text" class="form-control" name="last_name" value="{{ session.get('last', '') }}" autocomplete="family-name" required placeholder="e.g. Doe">
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Last Name</label>
-                            <input type="text" class="form-control" name="last_name" required placeholder="e.g. Doe">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Address</label>
+                            <input type="email" class="form-control" name="email" value="{{ session.get('email') }}" autocomplete="email" required placeholder="name@example.com">
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Email Address</label>
-                        <input type="email" class="form-control" name="email" required placeholder="name@example.com">
-                    </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Passport Number</label>
+                            <input type="text" class="form-control" name="passport" value="{{ session.get('passport', '') }}" autocomplete="off" required placeholder="e.g. N1234567">
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Passport Number</label>
-                        <input type="text" class="form-control" name="passport" required placeholder="e.g. N1234567">
-                    </div>
+                {% else %}
+                    <form method="POST">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">First Name</label>
+                                <input type="text" class="form-control" name="first_name" required placeholder="e.g. Jane">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Last Name</label>
+                                <input type="text" class="form-control" name="last_name" required placeholder="e.g. Doe">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Address</label>
+                            <input type="email" class="form-control" name="email" required placeholder="name@example.com">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Passport Number</label>
+                            <input type="text" class="form-control" name="passport" required placeholder="e.g. N1234567">
+                        </div>
+                    
+                        {% endif %}
 
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="/" class="text-decoration-none text-muted">‹ Cancel & Go Back</a>

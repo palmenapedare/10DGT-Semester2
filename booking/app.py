@@ -26,10 +26,11 @@ def get_all_cities():
 def get_all_destinations():
     # Fetches a clean, sorted list of all unique destination cities in the database.
     conn = get_db_connection()
-    destination_query = 'SELECT DISTINCT destination FROM flights ORDER BY origin ASC' #ascending
+    dests_query = 'SELECT DISTINCT destination FROM flights ORDER BY origin ASC' #ascending
 
     # Extract the string value from each row row['origin']
-    db_dests = [row['destination'] for row in conn.execute(destination_query).fetchall()]
+    db_dests = [row['destination'] for row in 
+    conn.execute(dests_query).fetchall()]
     conn.close()
     return db_dests
 
@@ -39,6 +40,7 @@ def index():
     conn = get_db_connection()
     db_flights = conn.execute('SELECT * FROM flights').fetchall()
     cities = get_all_cities()
+    dests = get_all_destinations()
     conn.close() ## remember to close connection as otherwise leaves db insecure
     return render_template('index.html', flights=db_flights, cities=cities, dests=dests)
 
