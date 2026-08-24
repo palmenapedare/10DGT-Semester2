@@ -26,9 +26,9 @@ cursor.execute('''
         departure_time TEXT,
         capacity INTEGER,
         price INTEGER
+        airplane_type TEXT
     )
 ''')
-#added date and time
 
 cursor.execute('''
     CREATE TABLE passengers (
@@ -63,12 +63,13 @@ for _ in range(12): ##generate 12 flights
     # Generate a random future flight time inside a window of 2026
     departure_time = fake.future_datetime(end_date='+30d').strftime('%Y-%m-%d %H:%M')
     price = random.choice([79, 99, 129, 149, 199, 249])
+    airplane_type = fake.airline.airplane()
     capacity = random.choice([150, 180, 220]) # Standard Airbus/Boeing sizes
     
     cursor.execute('''
-        INSERT INTO flights (origin, destination, departure_time, capacity, price)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (origin, destination, departure_time, capacity, price)) ##updated this and l72
+        INSERT INTO flights (origin, destination, departure_time, capacity, price, airplane_type)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (origin, destination, departure_time, capacity, price, airplane_type))
 
 # 4. Generate Passengers Data
 print("-> Generating 50 unique passengers...")
@@ -89,7 +90,7 @@ for _ in range(50):
 print("-> Linking passengers to flights...")
 for passenger_id in range(1, 15): # Let's book the first 14 passengers onto random flights
     flight_id = random.randint(1, 12)
-    seat = f"{random.randint(1, 30)}{random.choice(['A', 'B', 'C', 'D', 'E', 'F'])}"
+    seat = fake.airline.seat({ aircraftType: airplane_type })
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
     cursor.execute('''
