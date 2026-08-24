@@ -1,7 +1,7 @@
-import re
-
 from flask import Flask, render_template, redirect, url_for, request, session
 import sqlite3
+import re
+#from datetime import date
 
 app = Flask(__name__)
 
@@ -37,14 +37,47 @@ def get_all_destinations():
 ## wtf is a route
 @app.route('/') ##'/' == homepage/dashboard #function sitting under route loads when go to route. when sitting by itself (see above), tool to use when needed
 def index():
+    origin = request.args.get('origin', '').strip()
+    destination = request.args.get('destination', '').strip()
+    flight_date = request.args.get('date', '').strip()
+
+    session['search_origin'] = origin
+    session['search_destination'] = destination
+    session['search_date'] = flight_date
+
     conn = get_db_connection()
-    db_flights = conn.execute('SELECT * FROM flights').fetchall()
+    query = 'SELECT * FROM flights'
+    filters = []
+    values = []
+
+    if origin:
+        filters.append('origin = ?')
+        values.append(origin)
+    if destination:
+        filters.append('destination = ?')
+        values.append(destination)
+    if flight_date:
+        filters.append('substr(departure_time, 1, 10) = ?')
+        values.append(flight_date)
+
+    if filters:
+        query += ' WHERE ' + ' AND '.join(filters)
+
+    db_flights = conn.execute(query, values).fetchall()
     cities = get_all_cities()
     dests = get_all_destinations()
     conn.close() ## remember to close connection as otherwise leaves db insecure
-    return render_template('index.html', flights=db_flights, cities=cities, dests=dests)
+    return render_template(
+        'index.html',
+        flights=db_flights,
+        cities=cities,
+        dests=dests,
+        selected_origin=origin,
+        selected_destination=destination,
+        selected_date=flight_date,
+    )
 
-@app.route('/user', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def user():
     conn = get_db_connection()
     if request.method == 'POST':
@@ -79,7 +112,7 @@ def user():
         session["passport"] = passport
         conn.commit()
         conn.close()
-        return redirect(url_for('myflights'))
+        return redirect(url_for('login.html'))
 
     else:
         return render_template('login.html')
@@ -96,7 +129,7 @@ def book_flight(flight_id):
 
     if "passenger_id" not in session:
         conn.close()
-        return redirect(url_for('user'))
+        return redirect(url_for('login'))
 
     if request.method == "POST":
         passenger_id = session["passenger_id"]
@@ -148,7 +181,7 @@ def booking_confirmation(booking_id):
 @app.route('/myflights')
 def myflights():
     if "passenger_id" not in session:
-        return redirect(url_for('user'))
+        return redirect(url_for('login'))
 
     passenger_id = session["passenger_id"]
     conn = get_db_connection()

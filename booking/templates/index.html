@@ -23,7 +23,7 @@
     <div class="container">
         <a class="navbar-brand fw-bold" href="index.html" style="color: var(--jetstar-orange);">SKYBOUND</a>
         <div class="navbar-nav ms-auto">
-            <a class="nav-link active" href="login.html">Login</a>
+            <a class="nav-link active" href="login">Login</a>
             <a class="nav-link active" href="logout.html">Logout</a>
             <a class="nav-link" href="myflights.html">My Bookings</a>
             <a class="nav-link btn btn-outline-dark ms-lg-3" href="#">Admin Login</a>
@@ -44,30 +44,32 @@
 
 <div class="container"> <!-- filter, search for flights -->
     <div class="hero-search mb-5">
-        <form class="row g-3">
+        <form class="row g-3" method="get" action="{{ url_for('index') }}">
             <div class="col-md-4">
                 <label class="form-label fw-bold">From</label>
-                <select name="origin" class="form-select">
-                    <option value="">Select Origin</option>
+                <input type="text" name="origin" class="form-control" list="origin-cities"
+                       value="{{ selected_origin }}" placeholder="Type or select an origin">
+                <datalist id="origin-cities">
                     {% for city in cities %}
-                        <option value="{{ city }}"> {{ city }}</option>
+                        <option value="{{ city }}"></option>
                     {% endfor %}
-                </select>
+                </datalist>
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-bold">To</label>
-               <select name="destination" class="form-select">
-                    <option value="">Select Destination</option>
+                <input type="text" name="destination" class="form-control" list="destination-cities"
+                       value="{{ selected_destination }}" placeholder="Type or select a destination">
+                <datalist id="destination-cities">
                     {% for dest in dests %}
-                        <option value="{{ dest }}" {% if dest == selected_destination %}selected{% endif %}>{{ dest }}</option>
+                        <option value="{{ dest }}"></option>
                     {% endfor %}
-                </select>
+                </datalist>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label fw-bold">Date</label>
-                <input type="date" class="form-control">
+                <input type="date" name="date" class="form-control" value="{{ selected_date }}">
             </div>
             
             <div class="col-md-1 d-flex align-items-end">
