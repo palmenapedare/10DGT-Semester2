@@ -46,6 +46,7 @@ cursor.execute('''
         flight_id INTEGER,
         passenger_id INTEGER,
         seat_assignment TEXT,
+        date_booked TEXT,
         FOREIGN KEY(flight_id) REFERENCES flights(flight_id),
         FOREIGN KEY(passenger_id) REFERENCES    passengers(passenger_id)
     ) 
@@ -89,11 +90,12 @@ print("-> Linking passengers to flights...")
 for passenger_id in range(1, 15): # Let's book the first 14 passengers onto random flights
     flight_id = random.randint(1, 12)
     seat = f"{random.randint(1, 30)}{random.choice(['A', 'B', 'C', 'D', 'E', 'F'])}"
-    
+    date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
+
     cursor.execute('''
-        INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
-        VALUES (?, ?, ?)
-    ''', (flight_id, passenger_id, seat))
+        INSERT INTO bookings (flight_id, passenger_id, seat_assignment, date_booked)
+        VALUES (?, ?, ?, ?)
+    ''', (flight_id, passenger_id, seat, date_listed))
 
 # Commit updates and close out
 connection.commit()

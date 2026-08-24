@@ -1,11 +1,13 @@
 from flask import Flask, render_template, redirect, url_for, request, session
 import sqlite3
 import re
-#from datetime import date
+from datetime import date
 
 app = Flask(__name__)
 
 app.secret_key = "AAA"
+
+adminpassword = '1234'
 
 def get_db_connection():
     conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
@@ -34,7 +36,6 @@ def get_all_destinations():
     conn.close()
     return db_dests
 
-## wtf is a route
 @app.route('/') ##'/' == homepage/dashboard #function sitting under route loads when go to route. when sitting by itself (see above), tool to use when needed
 def index():
     origin = request.args.get('origin', '').strip()
@@ -140,7 +141,7 @@ def book_flight(flight_id):
         cursor.execute('''
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
         VALUES (?, ?, ?)
-        ''', (flight_id, passenger_id, '12A'))
+        ''', (flight_id, passenger_id, '12A', date.today()))
 
         booking_id = cursor.lastrowid
         conn.commit()
@@ -195,6 +196,28 @@ def myflights():
 
     conn.close()
     return render_template('myflights.html', flights=flights)
+
+@app.route('/admin.html')
+def admin():
+    session.clear()
+    session["date"] = date.today()
+    conn = get_db_connection()
+    query = '''
+        SELECT f.*,
+               COUNT(b.booking_id) AS passengers_booked,
+               f.capacity - COUNT(b.booking_id) AS seats_remaining
+        FROM flights AS f
+        LEFT JOIN bookings AS b ON b.flight_id = f.flight_id
+        GROUP BY f.flight_id
+        ORDER BY f.departure_time ASC
+    '''
+    flights = conn.execute(query).fetchall()
+    query = '''
+        SELECT f.*
+                COUNT(f.flight_id) AS flight_quantity
+        '''
+    conn.close()
+    return render_template('admin.html', flights=flights)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
