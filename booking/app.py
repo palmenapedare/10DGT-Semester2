@@ -36,6 +36,17 @@ def get_all_destinations():
     conn.close()
     return db_dests
 
+def get_all_passengers():
+    # Fetches a clean, sorted list of all unique destination cities in the database.
+    conn = get_db_connection()
+    dests_query = 'SELECT DISTINCT passenger FROM bookings ORDER BY first_name ASC' #ascending
+
+    # Extract the string value from each row row['origin']
+    db_passengers = [row['passenger_id'] for row in 
+    conn.execute(dests_query).fetchall()]
+    conn.close()
+    return db_passengers #!!!!! fix
+
 @app.route('/') ##'/' == homepage/dashboard #function sitting under route loads when go to route. when sitting by itself (see above), tool to use when needed
 def index():
     origin = request.args.get('origin', '').strip()
@@ -205,19 +216,31 @@ def admin():
     query = '''
         SELECT f.*,
                COUNT(b.booking_id) AS passengers_booked,
-               f.capacity - COUNT(b.booking_id) AS seats_remaining
+               f.capacity - COUNT(b.booking_id) AS seats_remaining 
         FROM flights AS f
         LEFT JOIN bookings AS b ON b.flight_id = f.flight_id
         GROUP BY f.flight_id
-        ORDER BY f.departure_time ASC
-    '''
+        ORDER BY f.flight_id ASC
+    ''' #use f.capacity for sold out button
     flights = conn.execute(query).fetchall()
-    query = '''
-        SELECT f.*
-                COUNT(f.flight_id) AS flight_quantity
+    passengers_booked = conn.execute(
+        'SELECT COUNT(*) AS passengers_booked FROM bookings'
+    ).fetchone()['passengers_booked']
+    flight_quantity = conn.execute(
+        'SELECT COUNT(*) AS flight_quantity FROM flights'
+    ).fetchone()['flight_quantity']
+    profit_earned = conn.execute(
         '''
+        SELECT COALESCE(SUM(f.price), 0) AS profit_earned
+        FROM bookings AS b
+        JOIN flights AS f ON b.flight_id = f.flight_id
+        ''')
+
+    booking_ids = conn.execute('''
+    SELECT booking_ids from bookings  
+    ''').fetchall()['booking_ids']
     conn.close()
-    return render_template('admin.html', flights=flights)
+    return render_template('admin.html', flights=flights, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)

@@ -90,7 +90,7 @@ for _ in range(50):
 print("-> Linking passengers to flights...")
 for passenger_id in range(1, 15): # Let's book the first 14 passengers onto random flights
     flight_id = random.randint(1, 12)
-    seat = fake.airline.seat({ aircraftType: airplane_type })
+    seat = fake.airline.seat({ airplaneType: airplane_type })
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
     cursor.execute('''
