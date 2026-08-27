@@ -147,15 +147,19 @@ def user():
         session["passport"] = passport
         conn.commit()
         conn.close()
-        return redirect(url_for('login.html'))
+        return redirect(url_for('user'))
 
     else:
         return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    session.clear()
     return render_template('logout.html')
+
+@app.route('/logoutconfirmation')
+def logoutconfirmation():
+    session.clear()
+    return render_template('logoutconfirmation.html')
 
 ## e.g. /book/Q3540
 @app.route('/book/<int:flight_id>', methods=['GET', 'POST'])
@@ -175,7 +179,7 @@ def book_flight(flight_id):
         cursor.execute('''
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
         VALUES (?, ?, ?)
-        ''', (flight_id, passenger_id, '12A', date.today()))
+        ''', (flight_id, passenger_id, '12A'))
 
         booking_id = cursor.lastrowid
         conn.commit()
@@ -216,7 +220,7 @@ def booking_confirmation(booking_id):
 @app.route('/myflights')
 def myflights():
     if "passenger_id" not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('user'))
 
     passenger_id = session["passenger_id"]
     conn = get_db_connection()
@@ -231,7 +235,7 @@ def myflights():
     conn.close()
     return render_template('myflights.html', flights=flights)
 
-@app.route('/admin.html')
+@app.route('/admin')
 def admin():
     passengers = get_all_passengers()
     conn = get_db_connection()

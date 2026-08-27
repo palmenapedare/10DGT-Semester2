@@ -17,11 +17,11 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="index.html" style="color: var(--jetstar-orange);">SKYBOUND</a>
+        <a class="navbar-brand fw-bold" href="/" style="color: var(--jetstar-orange);">SKYBOUND</a>
         <div class="navbar-nav ms-auto">
-            <a class="nav-link active" href="index.html">Flights</a>
-            <a class="nav-link" href="myflights.html">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="#">Admin Login</a>
+            <a class="nav-link active" href="/">Flights</a>
+            <a class="nav-link" href="/myflights">My Bookings</a>
+            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/admin">Admin Login</a>
         </div>
     </div>
 </nav>
@@ -32,8 +32,8 @@
         <h5 class="card-title">Alert</h5>
         <p class="card-text">Would you like to log out?</p>
         <div id="liveAlertPlaceholder"></div>
-        <button type="button" class="btn btn-outline-dark ms-lg-3" id="liveAlertBtn" href="logoutconfirmation.html">Confirm</button>
-        <button type="button" class="btn btn-outline-dark ms-lg-3" id="liveAlertBtn" href="index.html">Go back</button>
+        <a class="btn btn-outline-dark ms-lg-3" href="{{ url_for('logoutconfirmation') }}">Confirm</a>
+        <a class="btn btn-outline-dark ms-lg-3" href="{{ url_for('index') }}">Go back</a>
     </div>
 </div>
 
