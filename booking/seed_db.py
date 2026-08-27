@@ -25,7 +25,7 @@ cursor.execute('''
         destination TEXT,
         departure_time TEXT,
         capacity INTEGER,
-        price INTEGER
+        price INTEGER,
         airplane_type TEXT
     )
 ''')
@@ -54,6 +54,7 @@ cursor.execute('''
 
 # 3. Generate Flights Data
 cities = ['Adelaide', 'Melbourne', 'Sydney', 'Brisbane', 'Perth', 'Gold Coast']
+aircraft_types = ['Airbus A320', 'Boeing 737', 'Airbus A330']
 
 print("-> Generating flights...")
 for _ in range(12): ##generate 12 flights
@@ -63,7 +64,7 @@ for _ in range(12): ##generate 12 flights
     # Generate a random future flight time inside a window of 2026
     departure_time = fake.future_datetime(end_date='+30d').strftime('%Y-%m-%d %H:%M')
     price = random.choice([79, 99, 129, 149, 199, 249])
-    airplane_type = fake.airline.airplane()
+    airplane_type = random.choice(aircraft_types)
     capacity = random.choice([150, 180, 220]) # Standard Airbus/Boeing sizes
     
     cursor.execute('''
@@ -90,7 +91,7 @@ for _ in range(50):
 print("-> Linking passengers to flights...")
 for passenger_id in range(1, 15): # Let's book the first 14 passengers onto random flights
     flight_id = random.randint(1, 12)
-    seat = fake.airline.seat({ airplaneType: airplane_type })
+    seat = f"{random.randint(1, capacity)}{random.choice('ABCDEF')}"
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
     cursor.execute('''

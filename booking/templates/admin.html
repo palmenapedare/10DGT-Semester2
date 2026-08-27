@@ -51,9 +51,9 @@
       </thead>
       <tbody>
         {% for flight in flights %}
-        <tr data-origin="{{ flight.origin }}" data-destination="{{ flight.destination }}" data-capacity="{{ flight.capacity }}">
+        <tr data-origin="{{ flights.origin }}" data-destination="{{ flights.destination }}" data-capacity="{{ flights.capacity }}">
           <td>{{ flight.flight_id }}</td>
-          <td>{{ flight.origin }}</td>
+          <td>{{ flight.orgin }}</td>
           <td>{{ flight.destination }}</td>
           <td>{{ flight.departure_time }}</td>
           <td>${{ flight.price }}</td>
@@ -89,22 +89,12 @@
         </tr>
       </thead>
       <tbody>
-        {% for booking_id in booking_ids %}
-        <tr data-origin="{{ flight.origin }}" data-destination="{{ flight.destination }}" data-capacity="{{ flight.capacity }}">
-          <td>{{ bookings.booking_id }}</td>
-          <td>{{ <passengers class="first_name"></bookings> }}</td>
-          <td>{{ <passengers class="last_name"></passengers> }}</td>
-          <td>{{ passengers.email }}</td>
-          <td>${{ passengers.passport_number }}</td>
-          <td>{{ flight.capacity }}</td>
-          <td>{{ flight.passengers_booked }}</td>
-          <td>{{ flight.seats_remaining }}</td>
-          <td class="flight-distance">Calculating...</td>
-          <td class="flight-cost">Calculating...</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="9">No flights found.</td>
+        {% for passenger in passengers %}
+          <td>{{ passenger.passenger_id }}</td>
+          <td>{{ passenger.first_name }}</td>
+          <td>{{ passenger.last_name }}</td>
+          <td>{{ passenger.email }}</td>
+          <td>{{ passenger.passport_num }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -133,7 +123,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- written using copilot as I don't know javascript -->
 <script>

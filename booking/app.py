@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, session
 import sqlite3
 import re
-from datetime import date
+from datetime import date, timedelta
 
 app = Flask(__name__)
 
@@ -37,13 +37,15 @@ def get_all_destinations():
     return db_dests
 
 def get_all_passengers():
-    # Fetches a clean, sorted list of all unique destination cities in the database.
+    # Fetches all passengers in alphabetical order.
     conn = get_db_connection()
-    dests_query = 'SELECT DISTINCT passenger FROM bookings ORDER BY first_name ASC' #ascending
+    passengers_query = '''
+        SELECT passenger_id, first_name, last_name, email, passport_num
+        FROM passengers
+        ORDER BY first_name ASC
+    '''
 
-    # Extract the string value from each row row['origin']
-    db_passengers = [row['passenger_id'] for row in 
-    conn.execute(dests_query).fetchall()]
+    db_passengers = conn.execute(passengers_query).fetchall()
     conn.close()
     return db_passengers #!!!!! fix
 
@@ -57,10 +59,31 @@ def index():
     session['search_destination'] = destination
     session['search_date'] = flight_date
 
+    todaysdate = date.today()
+    tomorrow = todaysdate + timedelta(days=1)
+
     conn = get_db_connection()
-    query = 'SELECT * FROM flights'
+    query = '''
+        SELECT flight_id, origin, destination, departure_time,
+               capacity,
+               CASE
+                   WHEN substr(departure_time, 1, 10) IN (?, ?)
+                   THEN price * 0.5
+                   ELSE price
+               END AS price,
+               CASE
+                   WHEN substr(departure_time, 1, 10) IN (?, ?)
+                   THEN 1
+                   ELSE 0
+               END AS timebasedsale
+        FROM flights
+    '''
+
     filters = []
-    values = []
+    values = [
+        todaysdate.isoformat(), tomorrow.isoformat(),
+        todaysdate.isoformat(), tomorrow.isoformat()
+    ]
 
     if origin:
         filters.append('origin = ?')
@@ -210,8 +233,7 @@ def myflights():
 
 @app.route('/admin.html')
 def admin():
-    session.clear()
-    session["date"] = date.today()
+    passengers = get_all_passengers()
     conn = get_db_connection()
     query = '''
         SELECT f.*,
@@ -234,13 +256,13 @@ def admin():
         SELECT COALESCE(SUM(f.price), 0) AS profit_earned
         FROM bookings AS b
         JOIN flights AS f ON b.flight_id = f.flight_id
-        ''')
+        ''').fetchone()['profit_earned']
 
-    booking_ids = conn.execute('''
-    SELECT booking_ids from bookings  
-    ''').fetchall()['booking_ids']
+    booking_ids = [row['booking_id'] for row in conn.execute('''
+        SELECT booking_id FROM bookings
+        ''').fetchall()] #order by asc? not working when I tried
     conn.close()
-    return render_template('admin.html', flights=flights, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids)
+    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
