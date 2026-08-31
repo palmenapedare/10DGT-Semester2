@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 app.secret_key = "AAA"
 
-adminpassword = '1234'
+adminpassword = '1234' 
 
 def get_db_connection():
     conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
@@ -48,6 +48,13 @@ def get_all_passengers():
     db_passengers = conn.execute(passengers_query).fetchall()
     conn.close()
     return db_passengers #!!!!! fix
+
+def login_required(function):
+    def secure_function(*args, **kwargs):
+        if "password" not in session:
+            return redirect(url_for("adminlogin"))
+        return function()
+    return secure_function
 
 @app.route('/') ##'/' == homepage/dashboard #function sitting under route loads when go to route. when sitting by itself (see above), tool to use when needed
 def index():
@@ -235,7 +242,20 @@ def myflights():
     conn.close()
     return render_template('myflights.html', flights=flights)
 
+@app.route('/adminlogin', methods=['GET', 'POST'])
+def adminlogin():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == adminpassword:
+            session["password"] = password
+            return redirect('/admin')
+        else:
+            return render_template('adminlogin.html', error="Incorrect password. Please try again.")
+    else:
+        return render_template('adminlogin.html', error=None)
+
 @app.route('/admin')
+@login_required
 def admin():
     passengers = get_all_passengers()
     conn = get_db_connection()
@@ -269,4 +289,4 @@ def admin():
     return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=8000) #added port as error was happening and keeping it consistent fixed it. don't know why
