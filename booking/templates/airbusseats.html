@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Selection - Airbus A320</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --plane-bg: #ffffff;
+            --plane-border: #cbd5e1;
+            --first-class: #991b1b;
+            --first-class-hover: #7f1d1d;
+            --comfort-class: #0284c7;
+            --comfort-class-hover: #0369a1;
+            --main-class: #1e40af;
+            --main-class-hover: #1e3a8a;
+            --selected: #22c55e;
+            --unavailable: #94a3b8;
+            --text-color: #1e293b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .fuselage {
+            background: var(--plane-bg);
+            border: 3px solid var(--plane-border);
+            border-radius: 150px 150px 40px 40px;
+            padding: 80px 30px 40px 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .cockpit-indicator {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .section-label {
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #64748b;
+            margin: 15px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cabin-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .row-number {
+            width: 30px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #64748b;
+        }
+
+        .seat-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .seat {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px 6px 4px 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            user-select: none;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .seat::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            width: 70%;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        .seat.business-class { background-color: var(--business-class); }
+        .seat.business-class:hover { background-color: var(--business-class-hover); }
+
+        .seat.premiumeconomy-class { background-color: var(--premiumeconomy-class); }
+        .seat.premiumeconomy-class:hover { background-color: var(--premiumeconomy-class-hover); }
+
+        .seat.economy-class { background-color: var(--economy-class); }
+        .seat.economy-class:hover { background-color: var(--economy-class-hover); }
+
+        .seat.selected {
+            background-color: var(--selected) !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+        }
+
+        .seat.unavailable {
+            background-color: var(--unavailable) !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .seat.unavailable::after {
+            display: none;
+        }
+
+        .exit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 10px 0;
+            padding: 4px 0;
+            border-top: 2px dashed #e2e8f0;
+            border-bottom: 2px dashed #e2e8f0;
+            color: #ef4444;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .booking-summary {
+            position: sticky;
+            bottom: 20px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            max-width: 500px;
+            width: 100%;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+
+        .summary-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .selected-seats-list {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-color);
+            min-height: 24px;
+        }
+
+        .confirm-btn {
+            background-color: var(--main-class);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .confirm-btn:hover {
+            background-color: var(--main-class-hover);
+        }
+
+        .confirm-btn:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Select Your Seat - Airbus A320</h2>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: var(--business-class);"></div> Business Class</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--premiumeconomy-class);"></div> Premium Economy</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--economy-class);"></div> Economy</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--selected);"></div> Selected</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--unavailable);"></div> Unavailable</div>
+    </div>
+
+    <div class="fuselage">
+        <div class="cockpit-indicator">Front of Aircraft</div>
+        <div id="cabin-map"></div>
+    </div>
+
+    <form method="POST" action="{{ url_for('seats', flight_id=flight.flight_id) }}">
+        <input type="hidden" id="selected_seats_input" name="selected_seats" value="">
+        <div class="booking-summary">
+            <div class="summary-info">
+                <h3>Selected Seats</h3>
+                <div class="selected-seats-list" id="selected-seats">None</div>
+            </div>
+            <button class="confirm-btn" id="confirm-btn" type="submit" disabled>Confirm</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const selectedSeats = new Set();
+
+    // Airbus A320 Layout Map
+    const layout = [
+        { type: 'label', text: 'Business Class' },
+        { row: 1, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
+        { row: 2, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
+        { row: 3, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
+        { row: 4, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
+        
+        { type: 'label', text: 'Premium Economy' },
+        { row: 5, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
+        { row: 6, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
+        { row: 7, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
+        
+        { type: 'label', text: 'Economy' },
+        { row: 8, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 9, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { type: 'exit' },
+        { row: 10, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { type: 'exit' },
+        { row: 11, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 12, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 13, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 14, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 15, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 16, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 17, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 18, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 19, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 20, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 21, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 22, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 23, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 24, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 25, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 26, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 27, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
+        { row: 28, seats: ['D', 'E', 'F'], class: 'economy-class' }
+    ];
+
+    function renderMap() {
+        const container = document.getElementById('cabin-map');
+
+        layout.forEach(item => {
+            if (item.type === 'label') {
+                const label = document.createElement('div');
+                label.className = 'section-label';
+                label.innerText = item.text;
+                container.appendChild(label);
+            } else if (item.type === 'exit') {
+                const exit = document.createElement('div');
+                exit.className = 'exit-row';
+                exit.innerHTML = '<span>◄ EXIT</span><span>EXIT ►</span>';
+                container.appendChild(exit);
+            } else {
+                const row = document.createElement('div');
+                row.className = 'cabin-row';
+
+                const leftGroup = document.createElement('div');
+                leftGroup.className = 'seat-group';
+
+                const rightGroup = document.createElement('div');
+                rightGroup.className = 'seat-group';
+
+                const is2x2 = item.seats.length === 4;
+                const isRightOnlyRow = item.seats.length === 3 && !item.seats.includes('A');
+                const leftSeats = is2x2 ? ['A', 'B'] : isRightOnlyRow ? ['A', 'B', 'C'] : ['A', 'B', 'C'];
+                const rightSeats = is2x2 ? ['C', 'D'] : isRightOnlyRow ? item.seats : ['D', 'E', 'F'];
+
+                if (isRightOnlyRow) {
+                    const spacer = document.createElement('div');
+                    spacer.className = 'seat-group';
+                    spacer.style.visibility = 'hidden';
+                    leftSeats.forEach(letter => {
+                        spacer.appendChild(createSeat(item.row, letter, item.class));
+                    });
+                    leftGroup.appendChild(spacer);
+                } else {
+                    leftSeats.forEach(letter => {
+                        leftGroup.appendChild(createSeat(item.row, letter, item.class));
+                    });
+                }
+
+                rightSeats.forEach(letter => {
+                    rightGroup.appendChild(createSeat(item.row, letter, item.class));
+                });
+
+                const rowNum = document.createElement('div');
+                rowNum.className = 'row-number';
+                rowNum.innerText = item.row;
+
+                row.appendChild(leftGroup);
+                row.appendChild(rowNum);
+                row.appendChild(rightGroup);
+
+                container.appendChild(row);
+            }
+        });
+    }
+
+    function createSeat(row, letter, seatClass) {
+        const seatId = `${row}${letter}`;
+        const seat = document.createElement('div');
+        seat.className = `seat ${seatClass}`;
+        seat.innerText = letter;
+        seat.dataset.seatId = seatId;
+
+        seat.addEventListener('click', () => toggleSeat(seat, seatId));
+        return seat;
+    }
+
+    async function loadBookedSeats() {
+        try {
+            const flightId = {{ flight.flight_id }};
+            const response = await fetch(`/api/booked-seats?flight_id=${flightId}`);
+            const bookedSeats = await response.json();
+
+            bookedSeats.forEach(seatId => {
+                const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+                if (seatElement) {
+                    seatElement.classList.add('unavailable');
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching booked seats:', error);
+        }
+    }
+
+    function toggleSeat(seatElement, seatId) {
+        if (seatElement.classList.contains('unavailable')) return;
+
+        document.querySelectorAll('.seat').forEach(seat => {
+            if (seat.dataset.seatId !== seatId) {
+                seat.classList.remove('selected');
+            }
+        });
+
+        selectedSeats.clear();
+
+        if (seatElement.classList.contains('selected')) {
+            seatElement.classList.remove('selected');
+            updateSummary();
+            return;
+        }
+
+        selectedSeats.add(seatId);
+        seatElement.classList.add('selected');
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const display = document.getElementById('selected-seats');
+        const button = document.getElementById('confirm-btn');
+        const hiddenInput = document.getElementById('selected_seats_input');
+
+        if (selectedSeats.size === 0) {
+            display.innerText = 'None';
+            button.disabled = true;
+            hiddenInput.value = '';
+        } else {
+            const sortedSeats = Array.from(selectedSeats).sort((a, b) => {
+                const rowA = parseInt(a);
+                const rowB = parseInt(b);
+                if (rowA !== rowB) return rowA - rowB;
+                return a.slice(-1).localeCompare(b.slice(-1));
+            });
+            display.innerText = sortedSeats.join(', ');
+            hiddenInput.value = sortedSeats[0];
+            button.disabled = false;
+        }
+    }
+
+    renderMap();
+    loadBookedSeats();
+</script>
+
+</body>
+</html>

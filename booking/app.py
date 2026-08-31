@@ -1,4 +1,6 @@
-from flask import Flask, render_template, redirect, url_for, request, session
+from random import random
+
+from flask import Flask, jsonify, render_template, redirect, url_for, request, session
 import sqlite3
 import re
 from datetime import date, timedelta
@@ -48,6 +50,27 @@ def get_all_passengers():
     db_passengers = conn.execute(passengers_query).fetchall()
     conn.close()
     return db_passengers #!!!!! fix
+
+def get_booked_seats(flight_id=None):
+    conn = get_db_connection()
+    if flight_id is None:
+        flight_id = request.args.get('flight_id')
+
+    if flight_id is None:
+        rows = conn.execute(
+            'SELECT seat_assignment FROM bookings WHERE seat_assignment IS NOT NULL'
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            'SELECT seat_assignment FROM bookings WHERE seat_assignment IS NOT NULL AND flight_id = ?',
+            (flight_id,)
+        ).fetchall()
+    conn.close()
+    return [row['seat_assignment'] for row in rows]
+
+@app.route('/api/booked-seats')
+def api_booked_seats():
+    return jsonify(get_booked_seats())
 
 def login_required(function):
     def secure_function(*args, **kwargs):
@@ -192,9 +215,10 @@ def book_flight(flight_id):
 
     if request.method == "POST":
         passenger_id = session["passenger_id"]
+        seat_choice = request.form.get('seat_choice')
+        if seat_choice == 'yes':
+            return redirect(url_for('seats', flight_id=flight_id))
 
-        # 3. Create a matching record in the bookings table to link passenger to flight
-        # For now, we will assign a random seat placeholder like '12A'
         cursor = conn.cursor()
         cursor.execute('''
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
@@ -237,6 +261,63 @@ def booking_confirmation(booking_id):
 
     return render_template('booking_confirmation.html', booking=booking_details)
 
+@app.route('/seats/<int:flight_id>', methods=['GET', 'POST'])
+def seats(flight_id):
+    conn = get_db_connection()
+    get_booked_seats()
+    if request.method == 'POST':
+        if 'passenger_id' not in session:
+            conn.close()
+            return redirect(url_for('login'))
+
+        selected_seat = request.form.get('selected_seats', '').strip()
+        if not selected_seat:
+            conn.close()
+            return redirect(url_for('seats', flight_id=flight_id))
+
+        cursor = conn.cursor()
+        existing = cursor.execute(
+            'SELECT booking_id FROM bookings WHERE flight_id = ? AND passenger_id = ?',
+            (flight_id, session['passenger_id'])
+        ).fetchone()
+
+        if existing:
+            cursor.execute(
+                'UPDATE bookings SET seat_assignment = ? WHERE booking_id = ?',
+                (selected_seat, existing['booking_id'])
+            )
+            booking_id = existing['booking_id']
+        else:
+            cursor.execute(
+                'INSERT INTO bookings (flight_id, passenger_id, seat_assignment) VALUES (?, ?, ?)',
+                (flight_id, session['passenger_id'], selected_seat)
+            )
+            booking_id = cursor.lastrowid
+
+        conn.commit()
+        conn.close()
+        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+
+    flight = conn.execute('SELECT * FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()
+    if flight is None:
+        conn.close()
+        return 'Flight not found', 404
+
+    airplane_type = flight['airplane_type']
+    booked_seats = conn.execute(
+        'SELECT seat_assignment FROM bookings WHERE flight_id = ?',
+        (flight_id,)
+    ).fetchall()
+    booked_seats_list = [row['seat_assignment'] for row in booked_seats]
+    conn.close()
+
+    if airplane_type in ('Airbus A320', 'Airbus A330'):
+        return render_template('airbusseats.html', flight=flight, booked_seats=booked_seats_list)
+    elif airplane_type == 'Boeing 737':
+        return render_template('boeingseats.html', flight=flight, booked_seats=booked_seats_list)
+    else:
+        return f'Unknown airplane type: {airplane_type}', 400
+
 @app.route('/myflights')
 def myflights():
     if "passenger_id" not in session:
@@ -246,7 +327,7 @@ def myflights():
     conn = get_db_connection()
 
     flights = conn.execute('''
-        SELECT flights.* 
+        SELECT flights.*, bookings.seat_assignment
         FROM flights
         JOIN bookings ON flights.flight_id = bookings.flight_id
         WHERE bookings.passenger_id = ?
