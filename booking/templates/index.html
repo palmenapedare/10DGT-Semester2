@@ -34,8 +34,8 @@
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
         <h1>Where to next?</h1> <!-- start of rendered info -->
-        {% if session %}
-            <p>Welcome, {{ session.get('first', '') }} {{ session.get('last', '') }}!</p>
+        {% if session.get('first') %}
+            <p>Welcome, {{ session.get('first') }} {{ session.get('last', '') }}!</p>
         {% else %}
             <p>Welcome!</p>
         {% endif %}
@@ -91,7 +91,9 @@
                         </div>
                         <div class="text-end">
                             <div class="price-tag">${{ flight.price }}</div>
-                            {% if flight.timebasedsale %}
+                            {% if flight.soldout == 1 or flight.soldout == true %}
+                                <div class="text-danger">Sold Out</div>
+                            {% elif flight.timebasedsale %}
                                 <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">SALE!</a>
                             {% else %}
                                 <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">Book</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->

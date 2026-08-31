@@ -71,19 +71,30 @@ def index():
 
     conn = get_db_connection()
     query = '''
-        SELECT flight_id, origin, destination, departure_time,
-               capacity,
-               CASE
-                   WHEN substr(departure_time, 1, 10) IN (?, ?)
-                   THEN price * 0.5
-                   ELSE price
-               END AS price,
-               CASE
-                   WHEN substr(departure_time, 1, 10) IN (?, ?)
-                   THEN 1
-                   ELSE 0
-               END AS timebasedsale
-        FROM flights
+        SELECT
+            f.flight_id,
+            f.origin,
+            f.destination,
+            f.departure_time,
+            f.capacity,
+            CASE
+                WHEN substr(f.departure_time, 1, 10) IN (?, ?)
+                THEN f.price * 0.5
+                ELSE f.price
+            END AS price,
+            CASE
+                WHEN substr(f.departure_time, 1, 10) IN (?, ?)
+                THEN 1
+                ELSE 0
+            END AS timebasedsale,
+            COUNT(b.booking_id) AS passengers_booked,
+            f.capacity - COUNT(b.booking_id) AS seats_remaining,
+            CASE
+                WHEN f.capacity - COUNT(b.booking_id) <= 0 THEN 1
+                ELSE 0
+            END AS soldout
+        FROM flights AS f
+        LEFT JOIN bookings AS b ON b.flight_id = f.flight_id
     '''
 
     filters = []
@@ -93,17 +104,19 @@ def index():
     ]
 
     if origin:
-        filters.append('origin = ?')
+        filters.append('f.origin = ?')
         values.append(origin)
     if destination:
-        filters.append('destination = ?')
+        filters.append('f.destination = ?')
         values.append(destination)
     if flight_date:
-        filters.append('substr(departure_time, 1, 10) = ?')
+        filters.append('substr(f.departure_time, 1, 10) = ?')
         values.append(flight_date)
 
     if filters:
         query += ' WHERE ' + ' AND '.join(filters)
+
+    query += ' GROUP BY f.flight_id, f.origin, f.destination, f.departure_time, f.capacity, f.price ORDER BY f.departure_time ASC'
 
     db_flights = conn.execute(query, values).fetchall()
     cities = get_all_cities()
@@ -154,7 +167,7 @@ def user():
         session["passport"] = passport
         conn.commit()
         conn.close()
-        return redirect(url_for('user'))
+        return redirect(url_for('index'))
 
     else:
         return render_template('login.html')
