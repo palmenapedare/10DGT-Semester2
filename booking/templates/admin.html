@@ -15,26 +15,28 @@
         .flight-card { border: none; border-left: 5px solid var(--jetstar-orange); transition: transform 0.2s; }
         .flight-card:hover { transform: scale(1.01); }
         .price-tag { font-size: 1.5rem; color: var(--jetstar-orange); font-weight: bold; }
+        .list-group-item.active { background-color: var(--jetstar-orange); border-color: var(--jetstar-orange); }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="index.html" style="color: var(--jetstar-orange);">SKYBOUND</a>
+        <a class="navbar-brand fw-bold" href="/" style="color: var(--jetstar-orange);">SKYBOUND</a>
         <div class="navbar-nav ms-auto">
-            <a class="nav-link active" href="login">Login</a>
-            <a class="nav-link active" href="logout.html">Logout</a>
-            <a class="nav-link" href="myflights.html">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="#">Admin Login</a>
+            <a class="nav-link active" href="/login">Login</a>
+            <a class="nav-link active" href="/logout">Logout</a>
+            <a class="nav-link" href="/myflights">My Bookings</a>
+            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/admin">Admin Login</a>
         </div>
     </div>
 </nav>
 
 <div class="container py-5">
-  <h1 class="mb-4">Flight bookings</h1>
-  <div class="table-responsive">
-    <table class="table table-striped align-middle">
+  <button class="btn btn-primary d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">Flight bookings</button>
+    <div id="collapseExample" class="collapse">
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
       <thead>
         <tr>
           <th>Flight</th>
@@ -51,9 +53,9 @@
       </thead>
       <tbody>
         {% for flight in flights %}
-        <tr data-origin="{{ flights.origin }}" data-destination="{{ flights.destination }}" data-capacity="{{ flights.capacity }}">
+        <tr data-origin="{{ flight.origin }}" data-destination="{{ flight.destination }}" data-capacity="{{ flight.capacity }}">
           <td>{{ flight.flight_id }}</td>
-          <td>{{ flight.orgin }}</td>
+          <td>{{ flight.origin }}</td>
           <td>{{ flight.destination }}</td>
           <td>{{ flight.departure_time }}</td>
           <td>${{ flight.price }}</td>
@@ -74,11 +76,12 @@
 </div>
 
 <div class="container py-5">
-  <h1 class="mb-4">Passengers</h1>
-  <div class="table-responsive">
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
+  <button class="btn btn-primary d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">Passengers</button>
+    <div id="collapseExample" class="collapse">
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+        <thead>
+         <tr>
           <th>Passenger ID</th>
           <th>First Name</th>
           <th>Last Name</th>
@@ -90,38 +93,83 @@
       </thead>
       <tbody>
         {% for passenger in passengers %}
+        <tr>
           <td>{{ passenger.passenger_id }}</td>
           <td>{{ passenger.first_name }}</td>
           <td>{{ passenger.last_name }}</td>
           <td>{{ passenger.email }}</td>
           <td>{{ passenger.passport_num }}</td>
+          <td>{{ passenger.num_bookings }}</td>
+          <td>{{ passenger.flights_booked }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+      </div>
+    </div>
   </div>
 </div>
-
 
 <div class="row">
   <div class="col-4">
     <div id="list-example" class="list-group">
       <a class="list-group-item list-group-item-action" href="#list-item-1">Bookings</a>
       <a class="list-group-item list-group-item-action" href="#list-item-2">Financial</a>
-      <a class="list-group-item list-group-item-action" href="#list-item-3"></a>
+      <a class="list-group-item list-group-item-action" href="#list-item-3">Control</a>
     </div>
   </div>
   <div class="col-8">
     <div data-bs-spy="scroll" data-bs-target="#list-example" data-bs-smooth-scroll="true" class="scrollspy-example" tabindex="0">
       <h4 id="list-item-1">Bookings</h4>
       <p>There have been {{passengers_booked}} passengers booked. </p>
+      <p>There have been {{ session.get['bookingnumber'] }} bookings in the active session.</p>
       <h4 id="list-item-2">Profit + Losses</h4>
       <p>The profit earned from passenger booking is ${{profit_earned}} AUD.</p>
       <p>The total loss of all flight is $<span id="total-flight-cost">Calculating...</span> AUD.</p>
-      <h4 id="list-item-3">Item 3</h4>
-      <p>...</p>
+      <h4 id="list-item-3">Control</h4>
+      <p>Would you like to list a flight as delayed?</p>
+      <div class="container" style="margin-top: 70px;">
+    <div class="hero-search mb-3">
+        <form class="row g-3" method="get" action="{{ url_for('admin') }}">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Flight ID</label>
+                <input type="text" name="flight_id" class="form-control" list="origin-cities"
+                       value="{{ selected_flight_id }}" placeholder="Type or select a current flight id">
+                <datalist id="origin-cities">
+                    {% for flight in flights %}
+                        <option value="{{ flight.flight_id }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-orange w-100">Go</button>
+            </div>
+        </form>
     </div>
   </div>
+
+    <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#collapseFlights" role="button" aria-expanded="false" aria-controls="collapseFlights">Listed Flights</button>
+    <div id="collapseFlights" class="collapse">
+      <div class="row mt-3">
+        {% for flight in flights %} <!-- loop for however many flights in flight db -->
+            <div class="col-12 mb-3">
+                <div class="card flight-card shadow-sm"> <!-- flight card (list of info) seen on website -->
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small">Flight ID: #{{ flight.flight_id }}</span> <!-- double curly brackets = print -->
+                            <h5 class="mb-0">{{ flight.time }} - {{ flight.origin }} to {{ flight.destination }}</h5> <!-- in db date/time conjoined (first 10 characters is date) -->
+                        </div>
+                        <div class="text-end">
+                            <p class="mb-0 text-muted">{{ flight.departure_time[0:10] }} | Direct</p>
+                            <a href="/alter/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">Alter time</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->
+                </div>
+                    </div>
+            </div>
+        {% endfor %}
+      </div>
+    </div>
+</div>
+</div>
 </div>
 
 <!-- written using copilot as I don't know javascript -->
@@ -178,6 +226,8 @@
 
   document.querySelector("#total-flight-cost").textContent = totalFlightCost.toFixed(2);
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

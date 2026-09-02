@@ -1,4 +1,5 @@
 from random import random
+from functools import wraps
 
 from flask import Flask, jsonify, render_template, redirect, url_for, request, session
 import sqlite3
@@ -68,11 +69,22 @@ def get_booked_seats(flight_id=None):
     conn.close()
     return [row['seat_assignment'] for row in rows]
 
+def get_booking_number():
+    conn = get_db_connection()
+    bookingnumber = 0
+    rows = conn.execute(
+        'SELECT booking_id FROM bookings'
+    ).fetchall()
+    conn.close()
+    for i in rows:
+        bookingnumber = +1
+
 @app.route('/api/booked-seats')
 def api_booked_seats():
     return jsonify(get_booked_seats())
 
 def login_required(function):
+    @wraps(function)
     def secure_function(*args, **kwargs):
         if "password" not in session:
             return redirect(url_for("adminlogin"))
@@ -224,6 +236,8 @@ def book_flight(flight_id):
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
         VALUES (?, ?, ?)
         ''', (flight_id, passenger_id, '12A'))
+        session["bookingnumber"] = +1
+        bookingnumber = +1
 
         booking_id = cursor.lastrowid
         conn.commit()
@@ -353,16 +367,24 @@ def adminlogin():
 def admin():
     passengers = get_all_passengers()
     conn = get_db_connection()
+    bookingnumber = get_booking_number()
+    flight_id = request.args.get('flight_id', '').strip()
+    
     query = '''
         SELECT f.*,
                COUNT(b.booking_id) AS passengers_booked,
                f.capacity - COUNT(b.booking_id) AS seats_remaining 
         FROM flights AS f
         LEFT JOIN bookings AS b ON b.flight_id = f.flight_id
-        GROUP BY f.flight_id
-        ORDER BY f.flight_id ASC
-    ''' #use f.capacity for sold out button
-    flights = conn.execute(query).fetchall()
+    '''
+    
+    if flight_id:
+        query += ' WHERE f.flight_id = ?'
+        query += ' GROUP BY f.flight_id ORDER BY f.flight_id ASC'
+        flights = conn.execute(query, (flight_id,)).fetchall()
+    else:
+        query += ' GROUP BY f.flight_id ORDER BY f.flight_id ASC'
+        flights = conn.execute(query).fetchall()
     passengers_booked = conn.execute(
         'SELECT COUNT(*) AS passengers_booked FROM bookings'
     ).fetchone()['passengers_booked']
@@ -380,7 +402,15 @@ def admin():
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids)
+    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id)
+
+@app.route('/alter')
+def alter():
+    conn = get_db_connection()
+    first = request.form.get('first_name').strip()
+    last = request.form.get('last_name').strip()
+    email = request.form.get('email').strip()
+    passport = request.form.get('passport').strip()
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000) #added port as error was happening and keeping it consistent fixed it. don't know why
