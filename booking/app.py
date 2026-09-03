@@ -404,13 +404,52 @@ def admin():
     conn.close()
     return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id)
 
-@app.route('/alter')
-def alter():
+@app.route('/alter', methods=['GET', 'POST'])
+@app.route('/alter/<int:flight_id_alter>', methods=['GET', 'POST'])
+def alter(flight_id_alter=None):
+    if flight_id_alter is None:
+        flight_id_alter = request.args.get('flight_id', type=int)
+    if flight_id_alter is None:
+        return redirect(url_for('admin'))
+
     conn = get_db_connection()
-    first = request.form.get('first_name').strip()
-    last = request.form.get('last_name').strip()
-    email = request.form.get('email').strip()
-    passport = request.form.get('passport').strip()
+    flight = conn.execute(
+        'SELECT * FROM flights WHERE flight_id = ?',
+        (flight_id_alter,)
+    ).fetchone()
+    flights = conn.execute(
+        '''SELECT DISTINCT flight_id FROM flights ORDER BY flight_id ASC'''
+    ).fetchall()
+    choice = request.form.get('change_time', '').strip()
+
+    if request.method == 'POST' and choice == '1':
+        conn.execute(
+            'UPDATE flights SET status = ? WHERE flight_id = ?',
+            ('Cancelled', flight_id_alter)
+        )
+        conn.commit()
+    elif request.method == 'POST' and choice in ('2', '3'):
+        alter_date = request.form.get('alter_date', '').strip()
+        if not alter_date:
+            conn.close()
+            return render_template('alter.html', flight=flight, flights=flights, error='Please enter a new date and time.'), 400
+
+        alter_date = alter_date.replace('T', ' ')
+        conn.execute(
+            '''UPDATE flights
+               SET departure_time = ?, status = ?
+               WHERE flight_id = ?''',
+            (alter_date, 'Delayed' if choice == '2' else 'Rescheduled', flight_id_alter)
+        )
+        conn.commit()
+
+    conn.close()
+    if flight is None:
+        return 'Flight not found', 404
+
+    if request.method == 'POST':
+        return redirect(url_for('alter', flight_id_alter=flight_id_alter))
+    return render_template('alter.html', flight=flight, flights=flights)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000) #added port as error was happening and keeping it consistent fixed it. don't know why

@@ -26,7 +26,8 @@ cursor.execute('''
         departure_time TEXT,
         capacity INTEGER,
         price INTEGER,
-        airplane_type TEXT
+        airplane_type TEXT,
+        status TEXT DEFAULT 'Scheduled'
     )
 ''')
 
@@ -68,9 +69,9 @@ for _ in range(12): ##generate 12 flights
     capacity = random.choice([150, 180, 220]) # Standard Airbus/Boeing sizes
     
     cursor.execute('''
-        INSERT INTO flights (origin, destination, departure_time, capacity, price, airplane_type)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (origin, destination, departure_time, capacity, price, airplane_type))
+        INSERT INTO flights (origin, destination, departure_time, capacity, price, airplane_type, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (origin, destination, departure_time, capacity, price, airplane_type, 'On time'))
 
 # 4. Generate Passengers Data
 print("-> Generating 50 unique passengers...")
