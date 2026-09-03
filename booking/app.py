@@ -15,6 +15,13 @@ adminpassword = '1234'
 def get_db_connection():
     conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
     conn.row_factory = sqlite3.Row ##row factory helps sqlite lock on to rows in db, pull out as objects
+    booking_columns = conn.execute('PRAGMA table_info(bookings)').fetchall()
+    existing_columns = {column['name'] for column in booking_columns}
+    for column_name in ('seat2', 'seat3', 'seat4'):
+        if booking_columns and column_name not in existing_columns:
+            conn.execute(f'ALTER TABLE bookings ADD COLUMN {column_name} TEXT')
+    if booking_columns:
+        conn.commit()
     return conn ##return w/ function, brings output (conn is output)
 
 def get_all_cities():
@@ -59,15 +66,19 @@ def get_booked_seats(flight_id=None):
 
     if flight_id is None:
         rows = conn.execute(
-            'SELECT seat_assignment FROM bookings WHERE seat_assignment IS NOT NULL'
+                '''SELECT seat_assignment, seat2, seat3, seat4
+                    FROM bookings WHERE seat_assignment IS NOT NULL'''
         ).fetchall()
     else:
         rows = conn.execute(
-            'SELECT seat_assignment FROM bookings WHERE seat_assignment IS NOT NULL AND flight_id = ?',
+                '''SELECT seat_assignment, seat2, seat3, seat4
+                    FROM bookings WHERE seat_assignment IS NOT NULL AND flight_id = ?''',
             (flight_id,)
         ).fetchall()
     conn.close()
-    return [row['seat_assignment'] for row in rows]
+    return [seat for row in rows for seat in (
+        row['seat_assignment'], row['seat2'], row['seat3'], row['seat4']
+    ) if seat]
 
 def get_booking_number():
     conn = get_db_connection()
@@ -223,7 +234,7 @@ def book_flight(flight_id):
 
     if "passenger_id" not in session:
         conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('user'))
 
     if request.method == "POST":
         passenger_id = session["passenger_id"]
@@ -259,10 +270,11 @@ def book_flight(flight_id):
 def booking_confirmation(booking_id):
     conn = get_db_connection()
     query = '''
-            SELECT b.booking_id, b.seat_assignment, p.first_name, p.last_name, 
+                 SELECT b.booking_id, b.seat_assignment, b.seat2, b.seat3, b.seat4,
+                     p.first_name, p.last_name,
                    f.origin, f.destination, f.departure_time, f.flight_id
             FROM bookings b
-            JOIN passengers p ON b.passenger_id = p.passenger_id
+            LEFT JOIN passengers p ON b.passenger_id = p.passenger_id
             JOIN flights f ON b.flight_id = f.flight_id
             WHERE b.booking_id = ?
         '''
@@ -282,10 +294,22 @@ def seats(flight_id):
     if request.method == 'POST':
         if 'passenger_id' not in session:
             conn.close()
-            return redirect(url_for('login'))
+            return redirect(url_for('user'))
 
-        selected_seat = request.form.get('selected_seats', '').strip()
-        if not selected_seat:
+        passenger = conn.execute(
+            'SELECT passenger_id FROM passengers WHERE passenger_id = ?',
+            (session['passenger_id'],)
+        ).fetchone()
+        if passenger is None:
+            session.pop('passenger_id', None)
+            conn.close()
+            return redirect(url_for('user'))
+
+        selected_seats = [request.form.get(name, '').strip() for name in (
+            'selected_seat', 'selected_seat2', 'selected_seat3', 'selected_seat4'
+        )]
+        selected_seats = [seat for seat in selected_seats if seat]
+        if not selected_seats:
             conn.close()
             return redirect(url_for('seats', flight_id=flight_id))
 
@@ -297,14 +321,18 @@ def seats(flight_id):
 
         if existing:
             cursor.execute(
-                'UPDATE bookings SET seat_assignment = ? WHERE booking_id = ?',
-                (selected_seat, existing['booking_id'])
+                     '''UPDATE bookings
+                         SET seat_assignment = ?, seat2 = ?, seat3 = ?, seat4 = ?
+                         WHERE booking_id = ?''',
+                     (*selected_seats, *(None,) * (4 - len(selected_seats)), existing['booking_id'])
             )
             booking_id = existing['booking_id']
         else:
             cursor.execute(
-                'INSERT INTO bookings (flight_id, passenger_id, seat_assignment) VALUES (?, ?, ?)',
-                (flight_id, session['passenger_id'], selected_seat)
+                     '''INSERT INTO bookings
+                         (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4)
+                         VALUES (?, ?, ?, ?, ?, ?)''',
+                     (flight_id, session['passenger_id'], *selected_seats, *(None,) * (4 - len(selected_seats)))
             )
             booking_id = cursor.lastrowid
 
@@ -319,10 +347,13 @@ def seats(flight_id):
 
     airplane_type = flight['airplane_type']
     booked_seats = conn.execute(
-        'SELECT seat_assignment FROM bookings WHERE flight_id = ?',
+          '''SELECT seat_assignment, seat2, seat3, seat4
+              FROM bookings WHERE flight_id = ?''',
         (flight_id,)
     ).fetchall()
-    booked_seats_list = [row['seat_assignment'] for row in booked_seats]
+    booked_seats_list = [seat for row in booked_seats for seat in (
+        row['seat_assignment'], row['seat2'], row['seat3'], row['seat4']
+    ) if seat]
     conn.close()
 
     if airplane_type in ('Airbus A320', 'Airbus A330'):
@@ -341,14 +372,15 @@ def myflights():
     conn = get_db_connection()
 
     flights = conn.execute('''
-        SELECT flights.*, bookings.seat_assignment
+         SELECT flights.*, bookings.seat_assignment, bookings.seat2,
+             bookings.seat3, bookings.seat4
         FROM flights
         JOIN bookings ON flights.flight_id = bookings.flight_id
         WHERE bookings.passenger_id = ?
     ''', (passenger_id,)).fetchall()
 
     conn.close()
-    return render_template('myflights.html', flights=flights)
+    return render_template('myflights.html', flights=flights,)
 
 @app.route('/adminlogin', methods=['GET', 'POST'])
 def adminlogin():

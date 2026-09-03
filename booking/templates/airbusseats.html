@@ -9,12 +9,12 @@
             --bg-color: #f4f6f9;
             --plane-bg: #ffffff;
             --plane-border: #cbd5e1;
-            --first-class: #991b1b;
-            --first-class-hover: #7f1d1d;
-            --comfort-class: #0284c7;
-            --comfort-class-hover: #0369a1;
-            --main-class: #1e40af;
-            --main-class-hover: #1e3a8a;
+            --business-class: #991b1b;
+            --business-class-hover: #7f1d1d;
+            --premiumeconomy-class: #0284c7;
+            --premiumeconomy-class-hover: #0369a1;
+            --economy-class: #1e40af;
+            --economy-class-hover: #1e3a8a;
             --selected: #22c55e;
             --unavailable: #94a3b8;
             --text-color: #1e293b;
@@ -213,7 +213,7 @@
         }
 
         .confirm-btn {
-            background-color: var(--main-class);
+            background-color: var(--economy-class);
             color: white;
             border: none;
             padding: 10px 20px;
@@ -224,7 +224,7 @@
         }
 
         .confirm-btn:hover {
-            background-color: var(--main-class-hover);
+            background-color: var(--economy-class-hover);
         }
 
         .confirm-btn:disabled {
@@ -252,7 +252,10 @@
     </div>
 
     <form method="POST" action="{{ url_for('seats', flight_id=flight.flight_id) }}">
-        <input type="hidden" id="selected_seats_input" name="selected_seats" value="">
+        <input type="hidden" id="selected_seat_input" name="selected_seat" value="">
+        <input type="hidden" id="selected_seat2_input" name="selected_seat2" value="">
+        <input type="hidden" id="selected_seat3_input" name="selected_seat3" value="">
+        <input type="hidden" id="selected_seat4_input" name="selected_seat4" value="">
         <div class="booking-summary">
             <div class="summary-info">
                 <h3>Selected Seats</h3>
@@ -396,19 +399,14 @@
     function toggleSeat(seatElement, seatId) {
         if (seatElement.classList.contains('unavailable')) return;
 
-        document.querySelectorAll('.seat').forEach(seat => {
-            if (seat.dataset.seatId !== seatId) {
-                seat.classList.remove('selected');
-            }
-        });
-
-        selectedSeats.clear();
-
-        if (seatElement.classList.contains('selected')) {
+        if (selectedSeats.has(seatId)) {
+            selectedSeats.delete(seatId);
             seatElement.classList.remove('selected');
             updateSummary();
             return;
         }
+
+        if (selectedSeats.size >= 4) return;
 
         selectedSeats.add(seatId);
         seatElement.classList.add('selected');
@@ -418,12 +416,14 @@
     function updateSummary() {
         const display = document.getElementById('selected-seats');
         const button = document.getElementById('confirm-btn');
-        const hiddenInput = document.getElementById('selected_seats_input');
+        const hiddenInputs = [1, 2, 3, 4].map(number =>
+            document.getElementById(`selected_seat${number === 1 ? '' : number}_input`)
+        );
 
         if (selectedSeats.size === 0) {
             display.innerText = 'None';
             button.disabled = true;
-            hiddenInput.value = '';
+            hiddenInputs.forEach(input => input.value = '');
         } else {
             const sortedSeats = Array.from(selectedSeats).sort((a, b) => {
                 const rowA = parseInt(a);
@@ -432,7 +432,9 @@
                 return a.slice(-1).localeCompare(b.slice(-1));
             });
             display.innerText = sortedSeats.join(', ');
-            hiddenInput.value = sortedSeats[0];
+            hiddenInputs.forEach((input, index) => {
+                input.value = sortedSeats[index] || '';
+            });
             button.disabled = false;
         }
     }

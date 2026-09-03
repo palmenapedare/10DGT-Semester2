@@ -60,7 +60,12 @@
                             | Fare: ${{ flight.price }} AUD</p>
 
                         <p class="mb-0 opacity-50" style="color: black;">
-                            Seat Number: {{ flight.seat_assignment }}</p>
+                            Seats:
+                            {{ flight.seat_assignment }}
+                            {% if flight.seat2 %}, {{ flight.seat2 }}{% endif %}
+                            {% if flight.seat3 %}, {{ flight.seat3 }}{% endif %}
+                            {% if flight.seat4 %}, {{ flight.seat4 }}{% endif %}
+                        </p>
                     </div>
                 </div>
             </div>

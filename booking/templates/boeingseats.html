@@ -216,7 +216,7 @@
         }
 
         .confirm-btn {
-            background-color: var(--main-class);
+            background-color: var(--economy-class);
             color: white;
             border: none;
             padding: 10px 20px;
@@ -227,7 +227,7 @@
         }
 
         .confirm-btn:hover {
-            background-color: var(--main-class-hover);
+            background-color: var(--economy-class-hover);
         }
 
         .confirm-btn:disabled {
@@ -253,13 +253,19 @@
         <div id="cabin-map"></div>
     </div>
 
-    <div class="booking-summary">
+    <form method="POST" action="{{ url_for('seats', flight_id=flight.flight_id) }}">
+        <input type="hidden" id="selected_seat_input" name="selected_seat" value="">
+        <input type="hidden" id="selected_seat2_input" name="selected_seat2" value="">
+        <input type="hidden" id="selected_seat3_input" name="selected_seat3" value="">
+        <input type="hidden" id="selected_seat4_input" name="selected_seat4" value="">
+        <div class="booking-summary">
         <div class="summary-info">
             <h3>Selected Seats</h3>
             <div class="selected-seats-list" id="selected-seats">None</div>
         </div>
-        <button class="confirm-btn" id="confirm-btn" disabled>Confirm</button>
-    </div>
+            <button class="confirm-btn" id="confirm-btn" type="submit" disabled>Confirm</button>
+        </div>
+    </form>
 </div>
 
 <script>
@@ -387,6 +393,7 @@
             selectedSeats.delete(seatId);
             seatElement.classList.remove('selected');
         } else {
+            if (selectedSeats.size >= 4) return;
             selectedSeats.add(seatId);
             seatElement.classList.add('selected');
         }
@@ -396,10 +403,14 @@
     function updateSummary() {
         const display = document.getElementById('selected-seats');
         const button = document.getElementById('confirm-btn');
+        const hiddenInputs = [1, 2, 3, 4].map(number =>
+            document.getElementById(`selected_seat${number === 1 ? '' : number}_input`)
+        );
 
         if (selectedSeats.size === 0) {
             display.innerText = 'None';
             button.disabled = true;
+            hiddenInputs.forEach(input => input.value = '');
         } else {
             const sortedSeats = Array.from(selectedSeats).sort((a, b) => {
                 const rowA = parseInt(a);
@@ -409,6 +420,9 @@
             });
             display.innerText = sortedSeats.join(', ');
             button.disabled = false;
+            hiddenInputs.forEach((input, index) => {
+                input.value = sortedSeats[index] || '';
+            });
         }
     }
 
