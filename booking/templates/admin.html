@@ -32,9 +32,15 @@
     </div>
 </nav>
 
+<div style="background-color: #2d2d2d; height: 200px; width: 100%;">
+    <div class="container pt-4 text-white">
+        <h1>Admin Page</h1> <!-- start of rendered info -->
+    </div>
+</div>
+
 <div class="container py-5">
-  <button class="btn btn-primary d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">Flight bookings</button>
-    <div id="collapseExample" class="collapse">
+  <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#1collapse" role="button" aria-expanded="false" aria-controls="collapse1">Flight bookings</button>
+    <div id="1collapse" class="collapse">
       <div class="table-responsive">
         <table class="table table-striped align-middle">
       <thead>
@@ -76,8 +82,8 @@
 </div>
 
 <div class="container py-5">
-  <button class="btn btn-primary d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">Passengers</button>
-    <div id="collapseExample" class="collapse">
+  <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#2collapse" role="button" aria-expanded="false" aria-controls="collapse2">Passengers</button>
+    <div id="2collapse" class="collapse">
       <div class="table-responsive">
         <table class="table table-striped align-middle">
         <thead>
@@ -99,7 +105,7 @@
           <td>{{ passenger.last_name }}</td>
           <td>{{ passenger.email }}</td>
           <td>{{ passenger.passport_num }}</td>
-          <td>{{ passenger.num_bookings }}</td>
+          <td>{{ passenger.phone_num }}</td>
           <td>{{ passenger.flights_booked }}</td>
         </tr>
         {% endfor %}
@@ -121,8 +127,15 @@
   <div class="col-8">
     <div data-bs-spy="scroll" data-bs-target="#list-example" data-bs-smooth-scroll="true" class="scrollspy-example" tabindex="0">
       <h4 id="list-item-1">Bookings</h4>
-      <p>There have been {{passengers_booked}} passengers booked. </p>
-      <p>There have been {{ session.get['bookingnumber'] }} bookings in the active session.</p>
+      <p>There have been {{passengers_booked}} passenger/s booked. </p>
+      {% if session.get('bookingnumber') == None %}
+      <p>There have been 0 booking/s in the active session.</p>
+      {% else %}
+      <p>There have been {{ session.get('bookingnumber') }} booking/s in the active session.</p>
+      {% endif %}
+      {% if session.get('passenger_id') %}
+      <p>The logged in user, {{ session.get('first', '') }} {{ session.get('last', '') }}, has {{ userbookings }} booking/s.</p>
+      {% endif %}
       <h4 id="list-item-2">Profit + Losses</h4>
       <p>The profit earned from passenger booking is ${{profit_earned}} AUD.</p>
       <p>The total loss of all flight is $<span id="total-flight-cost">Calculating...</span> AUD.</p>

@@ -5,15 +5,18 @@ from flask import Flask, jsonify, render_template, redirect, url_for, request, s
 import sqlite3
 import re
 from datetime import date, timedelta
+from pathlib import Path
 
 app = Flask(__name__)
 
 app.secret_key = "AAA"
 
 adminpassword = '1234' 
+    #fix ^^^^^^^^
 
 def get_db_connection():
-    conn = sqlite3.connect('pedare_air.db') ##connects to pedare_air db
+    database_path = Path(__file__).resolve().parent / 'pedare_air.db'
+    conn = sqlite3.connect(database_path) ##connects to pedare_air db
     conn.row_factory = sqlite3.Row ##row factory helps sqlite lock on to rows in db, pull out as objects
     booking_columns = conn.execute('PRAGMA table_info(bookings)').fetchall()
     existing_columns = {column['name'] for column in booking_columns}
@@ -186,6 +189,7 @@ def user():
         last = request.form.get('last_name').strip()
         email = request.form.get('email').strip()
         passport = request.form.get('passport').strip()
+        phone = request.form.get('phone').strip()
         print("Session data set!")
 
         #if not all(first, last, email, passport):
@@ -201,9 +205,9 @@ def user():
             passenger_id = existing["passenger_id"]
         else:
             cursor.execute('''
-            INSERT INTO passengers (first_name, last_name, email, passport_num)
-            VALUES (?, ?, ?, ?)
-            ''', (first, last, email, passport))
+            INSERT INTO passengers (first_name, last_name, email, passport_num, phone_num)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (first, last, email, passport, phone))
             passenger_id = cursor.lastrowid
 
         session["passenger_id"] = passenger_id
@@ -211,6 +215,7 @@ def user():
         session["last"] = last
         session["email"] = email
         session["passport"] = passport
+        session["phonenumber"] = phone
         conn.commit()
         conn.close()
         return redirect(url_for('index'))
@@ -227,7 +232,6 @@ def logoutconfirmation():
     session.clear()
     return render_template('logoutconfirmation.html')
 
-## e.g. /book/Q3540
 @app.route('/book/<int:flight_id>', methods=['GET', 'POST'])
 def book_flight(flight_id):
     conn = get_db_connection()
@@ -247,7 +251,7 @@ def book_flight(flight_id):
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment)
         VALUES (?, ?, ?)
         ''', (flight_id, passenger_id, '12A'))
-        session["bookingnumber"] = +1
+        session["bookingnumber"] = None
         bookingnumber = +1
 
         booking_id = cursor.lastrowid
@@ -430,11 +434,17 @@ def admin():
         JOIN flights AS f ON b.flight_id = f.flight_id
         ''').fetchone()['profit_earned']
 
+    userbookings = 0
+    passenger_id = session.get('passenger_id')
+    if passenger_id is not None:
+        query = '''SELECT COUNT(*) AS user_bookings FROM bookings WHERE passenger_id = ?'''
+        userbookings = conn.execute(query, (passenger_id,)).fetchone()['user_bookings']
+
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id)
+    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
 
 @app.route('/alter', methods=['GET', 'POST'])
 @app.route('/alter/<int:flight_id_alter>', methods=['GET', 'POST'])

@@ -37,7 +37,9 @@ cursor.execute('''
         first_name TEXT,
         last_name TEXT,
         email TEXT,
-        passport_num TEXT
+        passport_num TEXT,
+        phone_num TEXT,
+        number_of_bookings INTEGER DEFAULT 0
     ) 
 ''')
 
@@ -85,26 +87,52 @@ for _ in range(50):
     email = f"{first_name.lower()}.{last_name.lower()}@{fake.free_email_domain()}"
     # Australian Passport format: 1 letter followed by 7 digits
     passport_num = fake.bothify(text='?#######').upper() #? is letter, # is number
+    phone_num = fake.phone_number()
     
     cursor.execute('''
-        INSERT INTO passengers (first_name, last_name, email, passport_num)
-        VALUES (?, ?, ?, ?)
-    ''', (first_name, last_name, email, passport_num))
+        INSERT INTO passengers (first_name, last_name, email, passport_num, phone_num)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (first_name, last_name, email, passport_num, phone_num))
 
 # 5. Generate a few existing Bookings (To show data on day one)
 print("-> Linking passengers to flights...")
 for passenger_id in range(1, 15): # Let's book the first 14 passengers onto random flights
     flight_id = random.randint(1, 12)
-    seat = f"{random.randint(1, 33)}{random.choice('ABCDEF')}"
-    seat2 = f"{random.randint(1, 33)}{random.choice('ABCDEF')}"
-    seat3 = f"{random.randint(1, 33)}{random.choice('ABCDEF')}"
-    seat4 = f"{random.randint(1, 33)}{random.choice('ABCDEF')}"
+    occupied_seats = {
+        seat
+        for row in cursor.execute('''
+            SELECT seat_assignment, seat2, seat3, seat4
+            FROM bookings
+            WHERE flight_id = ?
+        ''', (flight_id,)).fetchall()
+        for seat in row
+        if seat
+    }
+    available_seats = [
+        f"{row}{letter}"
+        for row in range(1, 34)
+        for letter in 'ABCDEF'
+        if f"{row}{letter}" not in occupied_seats
+    ]
+    selected_seats = random.sample(available_seats, random.randint(1, 4))
+    selected_seats += [None] * (4 - len(selected_seats))
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
     cursor.execute('''
         INSERT INTO bookings (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4, date_booked)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (flight_id, passenger_id, seat, seat2, seat3, seat4, date_listed))
+    ''', (flight_id, passenger_id, *selected_seats, date_listed))
+
+print("-> Updating passengers' number of bookings...")
+bookings_count = cursor.execute('''SELECT DISTINCT passenger_id, COUNT(*) as booking_count FROM bookings GROUP BY passenger_id''').fetchall()
+for i in bookings_count:
+    passenger_id, booking_count = i
+    cursor.execute('''
+        UPDATE passengers
+        SET number_of_bookings = ?
+        WHERE passenger_id = ?
+    ''', (booking_count, passenger_id))
+
 
 # Commit updates and close out
 connection.commit()
