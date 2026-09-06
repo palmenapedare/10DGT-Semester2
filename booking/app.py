@@ -209,6 +209,12 @@ def user():
             VALUES (?, ?, ?, ?, ?)
             ''', (first, last, email, passport, phone))
             passenger_id = cursor.lastrowid
+            cursor.execute('''
+            SELECT p.frequent_flyer_pts WHERE passenger_id = ?
+            CASE
+                WHEN p.frequent_flyer_pts = 0
+                THEN p.frequent_flyer_pts = 50
+            END AS frequentflyermember''', passenger_id)
 
         session["passenger_id"] = passenger_id
         session["first"] = first

@@ -39,7 +39,8 @@ cursor.execute('''
         email TEXT,
         passport_num TEXT,
         phone_num TEXT,
-        number_of_bookings INTEGER DEFAULT 0
+        number_of_bookings INTEGER DEFAULT 0,
+        frequent_flyer_pts INTEGER DEFAULT 0
     ) 
 ''')
 
