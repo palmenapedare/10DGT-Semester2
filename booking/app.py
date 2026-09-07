@@ -465,6 +465,8 @@ def payment(booking_id, flight_id):
             flight_id=flight_id,
             tooexpensive=tooexpensive,
             namemismatch=False,
+            frequent_flyer_pts=frequent_flyer_pts,
+            flightcost=flightcost
         )
 
 @app.route('/myflights')
