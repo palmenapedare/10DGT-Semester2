@@ -54,6 +54,7 @@ cursor.execute('''
         seat3 TEXT,
         seat4 TEXT,
         date_booked TEXT,
+        paid TEXT,
         FOREIGN KEY(flight_id) REFERENCES flights(flight_id),
         FOREIGN KEY(passenger_id) REFERENCES    passengers(passenger_id)
     ) 
@@ -120,9 +121,9 @@ for passenger_id in range(1, 15): # Let's book the first 14 passengers onto rand
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
     cursor.execute('''
-        INSERT INTO bookings (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4, date_booked)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (flight_id, passenger_id, *selected_seats, date_listed))
+        INSERT INTO bookings (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4, date_booked, paid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (flight_id, passenger_id, *selected_seats, date_listed, 'True'))
 
 print("-> Updating passengers' number of bookings...")
 bookings_count = cursor.execute('''SELECT DISTINCT passenger_id, COUNT(*) as booking_count FROM bookings GROUP BY passenger_id''').fetchall()

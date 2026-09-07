@@ -210,11 +210,10 @@ def user():
             ''', (first, last, email, passport, phone))
             passenger_id = cursor.lastrowid
             cursor.execute('''
-            SELECT p.frequent_flyer_pts WHERE passenger_id = ?
-            CASE
-                WHEN p.frequent_flyer_pts = 0
-                THEN p.frequent_flyer_pts = 50
-            END AS frequentflyermember''', passenger_id)
+                UPDATE passengers
+                SET frequent_flyer_pts = 50
+                WHERE passenger_id = ? AND frequent_flyer_pts = 0
+            ''', (passenger_id,))
 
         session["passenger_id"] = passenger_id
         session["first"] = first
@@ -261,11 +260,16 @@ def book_flight(flight_id):
         bookingnumber = +1
 
         booking_id = cursor.lastrowid
+        cursor.execute('''
+            UPDATE passengers
+            SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
+                (SELECT price FROM flights WHERE flight_id = ?)
+            WHERE passenger_id = ?
+        ''', (flight_id, passenger_id))
         conn.commit()
         conn.close()
 
-        # 4. Redirect back to the homepage after a successful database save
-        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+        return redirect(url_for('seats', booking_id=booking_id, flight_id=flight_id))
 
     ## if they didn't come from booking form page
     else:
@@ -345,10 +349,16 @@ def seats(flight_id):
                      (flight_id, session['passenger_id'], *selected_seats, *(None,) * (4 - len(selected_seats)))
             )
             booking_id = cursor.lastrowid
+            cursor.execute('''
+                UPDATE passengers
+                SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
+                    (SELECT price FROM flights WHERE flight_id = ?)
+                WHERE passenger_id = ?
+            ''', (flight_id, session['passenger_id']))
 
         conn.commit()
         conn.close()
-        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+        return redirect(url_for('payment', booking_id=booking_id, flight_id=flight_id))
 
     flight = conn.execute('SELECT * FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()
     if flight is None:
@@ -372,6 +382,44 @@ def seats(flight_id):
         return render_template('boeingseats.html', flight=flight, booked_seats=booked_seats_list)
     else:
         return f'Unknown airplane type: {airplane_type}', 400
+
+@app.route('/payment/<int:booking_id>', methods=['GET', 'POST'])
+def payment(booking_id):
+    if request.method == 'POST':
+        entered_first = request.form.get('first_name')
+        entered_last = request.form.get('last_name')
+        card_num = request.form.get('card_num')
+        expiry = request.form.get('expiry')
+        cvv = request.form.get('cvv')
+
+        if entered_first != session['first'] or entered_last != session['last']:
+            return render_template(
+                'payment.html',
+                error=None,
+                booking_id=booking_id,
+                namemismatch=True,
+            )
+
+        else:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                UPDATE bookings
+                SET paid = 1
+                WHERE booking_id = ?
+            ''', (booking_id,))
+            conn.commit()
+            conn.close()
+            return redirect(url_for('booking_confirmation', booking_id=booking_id))
+        
+    else:
+        return render_template(
+            'payment.html',
+            error=None,
+            booking_id=booking_id,
+            namemismatch=False,
+        )
 
 @app.route('/myflights')
 def myflights():
