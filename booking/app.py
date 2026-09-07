@@ -294,6 +294,7 @@ def booking_confirmation(booking_id):
         '''
 
     booking_details = conn.execute(query, (booking_id,)).fetchone()
+    #receipt
     conn.close()
     
     if booking_details is None:
@@ -383,41 +384,86 @@ def seats(flight_id):
     else:
         return f'Unknown airplane type: {airplane_type}', 400
 
-@app.route('/payment/<int:booking_id>', methods=['GET', 'POST'])
-def payment(booking_id):
-    if request.method == 'POST':
-        entered_first = request.form.get('first_name')
-        entered_last = request.form.get('last_name')
-        card_num = request.form.get('card_num')
-        expiry = request.form.get('expiry')
-        cvv = request.form.get('cvv')
+@app.route('/payment/<int:booking_id>/<int:flight_id>', methods=['GET', 'POST'])
+def payment(booking_id, flight_id):
+    conn = get_db_connection()
+    payment_details = conn.execute('''
+        SELECT p.frequent_flyer_pts, f.price
+        FROM bookings AS b
+        JOIN passengers AS p ON p.passenger_id = b.passenger_id
+        JOIN flights AS f ON f.flight_id = b.flight_id
+        WHERE b.booking_id = ? AND b.flight_id = ?
+    ''', (booking_id, flight_id)).fetchone()
+    conn.close()
 
-        if entered_first != session['first'] or entered_last != session['last']:
-            return render_template(
+    if payment_details is None:
+        return 'Booking Not Found', 404
+
+    frequent_flyer_pts = payment_details['frequent_flyer_pts'] or 0
+    flightcost = payment_details['price']
+    tooexpensive = frequent_flyer_pts < flightcost * 2
+
+    if request.method == 'POST':
+        if request.form.get('paymentchoice') == 'card':
+            entered_first = request.form.get('first_name')
+            entered_last = request.form.get('last_name')
+            card_num = request.form.get('card_num')
+            expiry = request.form.get('expiry')
+            cvv = request.form.get('cvv')
+
+            if entered_first != session['first'] or entered_last != session['last']:
+                return render_template(
                 'payment.html',
                 error=None,
                 booking_id=booking_id,
+                flight_id=flight_id,
                 namemismatch=True,
-            )
+                )
 
-        else:
+            else:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+
+                cursor.execute('''
+                UPDATE bookings
+                SET paid = 1
+                WHERE booking_id = ?
+                ''', (booking_id,))
+                conn.commit()
+                conn.close()
+
+        elif request.form.get('paymentchoice') == 'points':
+            if tooexpensive:
+                return redirect(url_for(
+                    'payment',
+                    booking_id=booking_id,
+                    flight_id=flight_id,
+                    tooexpensive=True,
+                ))
+
             conn = get_db_connection()
-            cursor = conn.cursor()
-
-            cursor.execute('''
+            conn.execute('''
+                UPDATE passengers
+                SET frequent_flyer_pts = frequent_flyer_pts - ?
+                WHERE passenger_id = ?
+            ''', (flightcost * 2, session['passenger_id']))
+            conn.execute('''
                 UPDATE bookings
                 SET paid = 1
                 WHERE booking_id = ?
             ''', (booking_id,))
             conn.commit()
             conn.close()
-            return redirect(url_for('booking_confirmation', booking_id=booking_id))
+        
+        return redirect(url_for('booking_confirmation', booking_id=booking_id))
         
     else:
         return render_template(
             'payment.html',
             error=None,
             booking_id=booking_id,
+            flight_id=flight_id,
+            tooexpensive=tooexpensive,
             namemismatch=False,
         )
 

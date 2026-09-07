@@ -27,7 +27,43 @@
     </div>
 </nav>
 
+<div style="background-color: #2d2d2d; height: 200px; width: 100%;">
+    <div class="container pt-4 text-white">
+        <h1>Payment</h1> <!-- start of rendered info -->
+    </div>
+</div>
+
+<h3>1 Frequent Flyer Point (earned from $1AUD spent) = $0.50AUD</h3>
+
 <form method="POST">
+{% if tooexpensive %}
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="paymentchoice" id="frequentflyerpoints" disabled>
+  <label class="form-check-label" for="frequentflyerpoints">
+    Frequent Flyer Points
+  </label>
+</div>
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="paymentchoice" id="creditcard">
+  <label class="form-check-label" for="creditcard">
+    Credit Card
+  </label>
+</div>
+
+{% else %}
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="paymentchoice" id="frequentflyerpoints">
+  <label class="form-check-label" for="frequentflyerpoints">
+    Frequent Flyer Points
+  </label>
+</div>
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="paymentchoice" id="creditcard">
+  <label class="form-check-label" for="creditcard">
+    Credit Card
+  </label>
+</div>
+    
     <div class="row g-3 mb-3">
         <div class="col-md-6">
             <label class="form-label fw-bold">First Name</label>
@@ -65,6 +101,7 @@
                     <button type="submit" class="btn btn-orange px-5 py-2">Login</button>
                 </div>
             </form>
+{% endif %}
         
 {% if namemismatch %}
     <div class="parent-container" style="display: flex; justify-content: center; margin: 10px;">
@@ -74,11 +111,12 @@
         <p class="card-text">The name entered in First Name and/or Last Name fields does not match the name stored in the current user session. Would you like to proceed?</p>
         <div id="liveAlertPlaceholder"></div>
         <a class="btn btn-outline-dark ms-lg-3" href="{{ url_for('booking_confirmation', booking_id=booking_id) }}">Confirm</a>
-        <a class="btn btn-outline-dark ms-lg-3" href="{{ url_for('payment', booking_id=booking_id) }}">Go back</a>
+        <a class="btn btn-outline-dark ms-lg-3" href="{{ url_for('payment', booking_id=booking_id, flight_id=flight_id) }}">Go back</a>
     </div>
     </div>
     </div>
 {% endif %}
-                    
+
+
 </body>
 </html>
