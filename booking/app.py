@@ -190,6 +190,7 @@ def user():
         email = request.form.get('email').strip()
         passport = request.form.get('passport').strip()
         phone = request.form.get('phone').strip()
+        ffopt_choice = request.form.get('ffopt_choice')
         print("Session data set!")
 
         #if not all(first, last, email, passport):
@@ -221,6 +222,10 @@ def user():
         session["email"] = email
         session["passport"] = passport
         session["phonenumber"] = phone
+        if ffopt_choice == 'yes':
+            session["frequentflyeropt"] = True
+        else:
+            session["frequentflyeropt"] = False
         conn.commit()
         conn.close()
         return redirect(url_for('index'))
@@ -487,6 +492,105 @@ def myflights():
 
     conn.close()
     return render_template('myflights.html', flights=flights,)
+
+@app.route('/frequentflyer')
+def frequentflyer():
+    if "passenger_id" not in session:
+        return redirect(url_for('user'))
+
+    if session.get("frequentflyeropt") is not True:
+        return render_template('frequentflyerdisallowed.html')
+
+    passenger_id = session["passenger_id"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    query = '''
+        SELECT
+            f.flight_id,
+            f.origin,
+            f.destination,
+            f.departure_time,
+            f.capacity,
+            CASE
+                WHEN substr(f.departure_time, 1, 10) IN (?, ?)
+                THEN f.price * 0.5
+                ELSE f.price
+            END AS price,
+            CASE
+                WHEN substr(f.departure_time, 1, 10) IN (?, ?)
+                THEN 1
+                ELSE 0
+            END AS timebasedsale,
+            COUNT(b.booking_id) AS passengers_booked,
+            f.capacity - COUNT(b.booking_id) AS seats_remaining,
+            CASE
+                WHEN f.capacity - COUNT(b.booking_id) <= 0 THEN 1
+                ELSE 0
+            END AS soldout
+        FROM flights AS f
+        LEFT JOIN bookings AS b ON b.flight_id = f.flight_id
+    '''
+
+    todaysdate = date.today()
+    tomorrow = todaysdate + timedelta(days=1)
+
+    filters = []
+    values = [
+        todaysdate.isoformat(), tomorrow.isoformat(),
+        todaysdate.isoformat(), tomorrow.isoformat()
+    ]
+
+    query += '''
+        GROUP BY f.flight_id, f.origin, f.destination, f.departure_time,
+                 f.capacity, f.price
+        ORDER BY f.departure_time ASC
+    '''
+
+    db_flights = conn.execute(query, values).fetchall()
+
+    frequent_flyer_pts = conn.execute('''
+        SELECT frequent_flyer_pts
+        FROM passengers
+        WHERE passenger_id = ?
+    ''', (passenger_id,)).fetchone()['frequent_flyer_pts']
+
+    ffoptions = [
+        flight for flight in db_flights
+        if flight['price'] <= frequent_flyer_pts / 2
+    ]
+
+    ffoptionsnumber = 0
+
+    for i in ffoptions:
+        ffoptionsnumber += 1
+
+    conn.close()
+    return render_template('frequentflyers.html', frequent_flyer_pts=frequent_flyer_pts, ffoptions=ffoptions, ffoptionsnumber=ffoptionsnumber, flights=db_flights)
+
+@app.route('/unsubscribe')
+def unsubscribe():
+    conn = get_db_connection()
+    passenger_id = session.get('passenger_id')
+    if passenger_id is not None:
+        conn.execute('''
+            UPDATE passengers
+            SET frequent_flyer_pts = 0
+            WHERE passenger_id = ?
+        ''', (passenger_id,))
+        conn.commit()
+
+        session["frequentflyeropt"] = False
+    conn.close()
+    return render_template('unsubscribe.html')
+
+@app.route('/frequentflyeroptin')
+def frequentflyeroptin():
+    if "passenger_id" not in session:
+        return redirect(url_for('user'))
+
+    session["frequentflyeropt"] = True
+    return redirect(url_for('frequentflyer'))
 
 @app.route('/adminlogin', methods=['GET', 'POST'])
 def adminlogin():
