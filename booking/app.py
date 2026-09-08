@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Flask, jsonify, render_template, redirect, url_for, request, session
 import sqlite3
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 app = Flask(__name__)
@@ -282,6 +282,9 @@ def book_flight(flight_id):
 
 @app.route('/confirmation/<int:booking_id>')
 def booking_confirmation(booking_id):
+    paymentprice = request.args.get('paymentprice')
+    paymentchoice = request.args.get('paymentchoice')
+    transactiontime = request.args.get('transactiontime')
     conn = get_db_connection()
     query = '''
                  SELECT b.booking_id, b.seat_assignment, b.seat2, b.seat3, b.seat4,
@@ -300,7 +303,13 @@ def booking_confirmation(booking_id):
     if booking_details is None:
         return "Booking Not Found", 404
 
-    return render_template('booking_confirmation.html', booking=booking_details)
+    return render_template(
+        'booking_confirmation.html',
+        booking=booking_details,
+        paymentprice=paymentprice,
+        paymentchoice=paymentchoice,
+        transactiontime=transactiontime,
+    )
 
 @app.route('/seats/<int:flight_id>', methods=['GET', 'POST'])
 def seats(flight_id):
@@ -502,10 +511,12 @@ def payment(booking_id, flight_id):
 
             conn.commit()
             conn.close()
-        
-        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+
+        transactiontime = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+        return redirect(url_for('booking_confirmation', booking_id=booking_id, paymentprice=paymentprice, paymentchoice=request.form.get('paymentchoice'), transactiontime=transactiontime))
         
     else:
+        transactiontime = date.today().strftime("%Y-%m-%d %H:%M:%S")
         return render_template(
             'payment.html',
             error=None,
@@ -515,7 +526,9 @@ def payment(booking_id, flight_id):
             namemismatch=False,
             frequent_flyer_pts=frequent_flyer_pts,
             flightcost=flightcost,
-            paymentprice=paymentprice
+            paymentprice=paymentprice,
+            paymentchoice=request.form.get('paymentchoice'),
+            transactiontime=transactiontime
         )
 
 @app.route('/myflights')

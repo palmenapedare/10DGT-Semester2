@@ -5,11 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkyBound | Booking Confirmed</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
+        <style>
+        :root { --jetstar-orange: #ff5100; --bg-light: #f4f4f4; }
+        body { background-color: var(--bg-light); font-family: 'Segoe UI', Roboto, sans-serif; }
+        .navbar { background-color: white; border-bottom: 3px solid var(--jetstar-orange); }
+        .hero-search { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -50px; }
+        .btn-orange { background-color: var(--jetstar-orange); color: white; font-weight: bold; }
+        .btn-orange:hover { background-color: white; color: white; }
+        .flight-card { border: none; border-left: 5px solid var(--jetstar-orange); transition: transform 0.2s; }
+        .flight-card:hover { transform: scale(1.01); }
+        .price-tag { font-size: 1.5rem; color: var(--jetstar-orange); font-weight: bold; }
+        .list-group-item.active { background-color: var(--jetstar-orange); border-color: var(--jetstar-orange); }
         :root { --jetstar-orange: #ff5100; --bg-light: #f4f4f4; }
         body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; }
         .ticket-card { border: none; border-top: 8px solid var(--jetstar-orange); border-radius: 8px; background: white; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="container py-5">
@@ -49,5 +60,51 @@
         </div>
     </div>
 </div>
+
+<div class="card mx-auto" id="receipt" style="width: min(50rem, 100%);">
+  <div class="card-header">
+    Receipt
+  </div>
+  <div class="card-header">
+    Invoice Number: INV-{{ booking.booking_id}}-{{ transactiontime[0:10]|replace(" ", "-") }}
+  </div>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item">Cost: ${{ paymentprice }}</li>
+    {% if paymentchoice == 'card'%}
+    <li class="list-group-item">Payment Method: Credit Card</li>
+    {% elif paymentchoice == 'points' %}
+    <li class="list-group-item">
+        <div>Payment Method: Frequent Flyer Points</div>
+        <div class="text-muted">Therefore, {{ paymentprice * 2}} points were deducted from your account.</div>
+    </li>
+    {% else %}
+    <li class="alert alert-danger">There was an error collecting your payment information.</li>
+    {% endif %}
+    <li class="list-group-item">Outstanding Balance: $0.00</li>
+    <li class="list-group-item">Date and Time of Transaction: {{ transactiontime }}</li>
+  </ul>
+</div>
+
+<div class="container text-center">
+<button class="btn btn-orange" style="margin-top: 10px;" onclick="downloadPDF()" download="Receipt:INV{{ booking.booking_id }}">Download Receipt as PDF</button> #name not working
+</div>
+
+<script>
+function downloadPDF() {
+    const element = document.getElementById("receipt");
+    
+    // Optional configuration for better formatting results
+    const opt = {
+        margin:       0.5,
+        filename:     'Receipt-{{ transactiontime|replace(" ", "-")|replace(":", "-") }}.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 }, // Higher scale = crisper text rendering
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(element).save();
+}
+</script>
+
 </body>
 </html>
