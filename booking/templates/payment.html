@@ -39,7 +39,7 @@
     </div>
 </div>
 
-<h3>1 Frequent Flyer Point (earned from $1AUD spent) = $0.50AUD</h3>
+<h3>1 Frequent Flyer Point = $0.50AUD</h3>
 
 <form method="POST">
         <div class="form-check">
@@ -47,8 +47,8 @@
                 <label class="form-check-label" for="frequentflyerpoints">Frequent Flyer Points</label>
         </div>
 
-{% if frequent_flyer_pts is defined and flightcost is defined %}
-    <p>You have {{ frequent_flyer_pts }} frequent flyer points. This flight requires {{ flightcost * 2 }} points.</p>
+{% if frequent_flyer_pts is defined and paymentprice is defined %}
+    <p>You have {{ frequent_flyer_pts }} frequent flyer points. This flight requires {{ paymentprice * 2 }} points.</p>
 {% endif %}
 
         <div class="form-check">

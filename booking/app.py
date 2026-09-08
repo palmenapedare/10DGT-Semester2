@@ -204,6 +204,7 @@ def user():
 
         if existing:
             passenger_id = existing["passenger_id"]
+
         else:
             cursor.execute('''
             INSERT INTO passengers (first_name, last_name, email, passport_num, phone_num)
@@ -214,7 +215,7 @@ def user():
                 UPDATE passengers
                 SET frequent_flyer_pts = 50
                 WHERE passenger_id = ? AND frequent_flyer_pts = 0
-            ''', (passenger_id,))
+            ''', (passenger_id,)) # the if existing prevents duplicates AND prevents points fraud
 
         session["passenger_id"] = passenger_id
         session["first"] = first
@@ -265,12 +266,6 @@ def book_flight(flight_id):
         bookingnumber = +1
 
         booking_id = cursor.lastrowid
-        cursor.execute('''
-            UPDATE passengers
-            SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
-                (SELECT price FROM flights WHERE flight_id = ?)
-            WHERE passenger_id = ?
-        ''', (flight_id, passenger_id))
         conn.commit()
         conn.close()
 
@@ -310,6 +305,14 @@ def booking_confirmation(booking_id):
 @app.route('/seats/<int:flight_id>', methods=['GET', 'POST'])
 def seats(flight_id):
     conn = get_db_connection()
+    flight = conn.execute('SELECT * FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()
+    if flight is None:
+        conn.close()
+        return 'Flight not found', 404
+
+    seat_number = 0
+    businessclass = 0
+    premiumeconomyclass = 0
     get_booked_seats()
     if request.method == 'POST':
         if 'passenger_id' not in session:
@@ -355,21 +358,23 @@ def seats(flight_id):
                      (flight_id, session['passenger_id'], *selected_seats, *(None,) * (4 - len(selected_seats)))
             )
             booking_id = cursor.lastrowid
-            cursor.execute('''
-                UPDATE passengers
-                SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
-                    (SELECT price FROM flights WHERE flight_id = ?)
-                WHERE passenger_id = ?
-            ''', (flight_id, session['passenger_id']))
 
+        airplane_type = flight['airplane_type']
+        for seat in selected_seats:
+            seat_number += 1
+            seat_row = int(seat[:-1])
+            if seat_row in (1, 2, 3, 4):
+                businessclass += 1
+            elif airplane_type in ('Airbus A320', 'Airbus A330'):
+                if seat_row in (5, 6, 7, 8, 9, 10):
+                    premiumeconomyclass += 1
+            elif airplane_type == 'Boeing 737':
+                if seat_row in (5, 6, 7):
+                    premiumeconomyclass += 1
+        
         conn.commit()
         conn.close()
         return redirect(url_for('payment', booking_id=booking_id, flight_id=flight_id))
-
-    flight = conn.execute('SELECT * FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()
-    if flight is None:
-        conn.close()
-        return 'Flight not found', 404
 
     airplane_type = flight['airplane_type']
     booked_seats = conn.execute(
@@ -383,9 +388,9 @@ def seats(flight_id):
     conn.close()
 
     if airplane_type in ('Airbus A320', 'Airbus A330'):
-        return render_template('airbusseats.html', flight=flight, booked_seats=booked_seats_list)
+        return render_template('airbusseats.html', flight=flight, booked_seats=booked_seats_list, businessclass=businessclass, premiumeconomyclass=premiumeconomyclass, seat_number=seat_number)
     elif airplane_type == 'Boeing 737':
-        return render_template('boeingseats.html', flight=flight, booked_seats=booked_seats_list)
+        return render_template('boeingseats.html', flight=flight, booked_seats=booked_seats_list, businessclass=businessclass, premiumeconomyclass=premiumeconomyclass, seat_number=seat_number)
     else:
         return f'Unknown airplane type: {airplane_type}', 400
 
@@ -393,7 +398,8 @@ def seats(flight_id):
 def payment(booking_id, flight_id):
     conn = get_db_connection()
     payment_details = conn.execute('''
-        SELECT p.frequent_flyer_pts, f.price
+        SELECT p.frequent_flyer_pts, f.price, f.airplane_type,
+               b.seat_assignment, b.seat2, b.seat3, b.seat4
         FROM bookings AS b
         JOIN passengers AS p ON p.passenger_id = b.passenger_id
         JOIN flights AS f ON f.flight_id = b.flight_id
@@ -406,6 +412,21 @@ def payment(booking_id, flight_id):
 
     frequent_flyer_pts = payment_details['frequent_flyer_pts'] or 0
     flightcost = payment_details['price']
+    airplane_type = payment_details['airplane_type']
+    selected_seats = [payment_details[column] for column in (
+        'seat_assignment', 'seat2', 'seat3', 'seat4'
+    ) if payment_details[column]]
+    seat_number = len(selected_seats)
+    businessclass = sum(int(seat[:-1]) in (1, 2, 3, 4) for seat in selected_seats)
+    premium_rows = (5, 6, 7, 8, 9, 10) if airplane_type in ('Airbus A320', 'Airbus A330') else (5, 6, 7)
+    premiumeconomyclass = sum(
+        int(seat[:-1]) in premium_rows and int(seat[:-1]) not in (1, 2, 3, 4)
+        for seat in selected_seats
+    )
+    paymentprice = 0
+    paymentprice += businessclass * flightcost * 1.5
+    paymentprice += premiumeconomyclass * flightcost * 1.25
+    paymentprice += (seat_number - businessclass - premiumeconomyclass) * flightcost
     tooexpensive = frequent_flyer_pts < flightcost * 2
 
     if request.method == 'POST':
@@ -423,6 +444,7 @@ def payment(booking_id, flight_id):
                 booking_id=booking_id,
                 flight_id=flight_id,
                 namemismatch=True,
+                paymentprice=paymentprice
                 )
 
             else:
@@ -434,6 +456,15 @@ def payment(booking_id, flight_id):
                 SET paid = 1
                 WHERE booking_id = ?
                 ''', (booking_id,))
+
+                passenger_id = session['passenger_id']
+                cursor.execute('''
+                UPDATE passengers
+                SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
+                (?)
+                WHERE passenger_id = ?
+                ''', (paymentprice, passenger_id))
+
                 conn.commit()
                 conn.close()
 
@@ -443,20 +474,32 @@ def payment(booking_id, flight_id):
                     'payment',
                     booking_id=booking_id,
                     flight_id=flight_id,
+                    paymentprice=paymentprice,
                     tooexpensive=True,
                 ))
 
             conn = get_db_connection()
-            conn.execute('''
+            cursor = conn.cursor()
+            cursor.execute('''
                 UPDATE passengers
                 SET frequent_flyer_pts = frequent_flyer_pts - ?
                 WHERE passenger_id = ?
-            ''', (flightcost * 2, session['passenger_id']))
+            ''', (paymentprice * 2, session['passenger_id']))
             conn.execute('''
                 UPDATE bookings
                 SET paid = 1
                 WHERE booking_id = ?
             ''', (booking_id,))
+
+            passenger_id = session['passenger_id']
+            cursor = conn.cursor()
+            cursor.execute('''
+            UPDATE passengers
+            SET frequent_flyer_pts = COALESCE(frequent_flyer_pts, 0) +
+                (?)
+            WHERE passenger_id = ?
+            ''', (paymentprice, passenger_id))
+
             conn.commit()
             conn.close()
         
@@ -471,7 +514,8 @@ def payment(booking_id, flight_id):
             tooexpensive=tooexpensive,
             namemismatch=False,
             frequent_flyer_pts=frequent_flyer_pts,
-            flightcost=flightcost
+            flightcost=flightcost,
+            paymentprice=paymentprice
         )
 
 @app.route('/myflights')
