@@ -65,14 +65,14 @@
 
 
 <div class="card mx-auto" id="receipt" style="width: min(50rem, 100%);">
-  <div class="card-header">
-    Receipt
-  </div>
-  <div class="card-header">
-    Invoice Number: INV-{{ booking.booking_id}}-{{ transactiontime[0:10]|replace(" ", "-") }}
+  <div class="card-header text-muted small font-monospace text-uppercase">
+    Receipt | Invoice Number: INV-{{ booking.booking_id}}-{{ transactiontime[0:10]|replace(" ", "-") }}
   </div>
   <ul class="list-group list-group-flush">
     <li class="list-group-item">Cost: ${{ paymentprice }}</li>
+    <li class="list-group-item">Business Class Seats: {{businessclass}}</li>
+    <li class="list-group-item">Premium Economy Seats: {{premiumeconomyclass}}</li>
+    <li class="list-group-item">Economy Class Seats: {{seat_number - businessclass - premiumeconomyclass}}</li>
     {% if paymentchoice == 'card'%}
     <li class="list-group-item">Payment Method: Credit Card</li>
     {% elif paymentchoice == 'points' %}
@@ -89,7 +89,7 @@
 </div>
 
 <div class="container text-center">
-<button class="btn btn-orange" style="margin-top: 10px;" onclick="downloadPDF1()" download="Receipt:INV{{ booking.booking_id }}">Download Receipt as PDF</button> #name not working
+<button class="btn btn-orange" style="margin-top: 10px;" onclick="downloadPDF1()" download="Receipt:INV{{ booking.booking_id }}">Download Receipt as PDF</button>
 </div>
 
 <script>

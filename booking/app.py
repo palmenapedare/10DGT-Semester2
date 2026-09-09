@@ -290,9 +290,15 @@ def book_flight(flight_id):
 
 @app.route('/confirmation/<int:booking_id>')
 def booking_confirmation(booking_id):
+    transactiontime = request.args.get('transactiontime') or datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+    paymentprice = request.args.get('paymentprice', type=float)
+    paymentchoice = request.args.get('paymentchoice')
+    businessclass = request.args.get('businessclass', default=0, type=int)
+    premiumeconomyclass = request.args.get('premiumeconomyclass', default=0, type=int)
+    seat_number = request.args.get('seat_number', default=0, type=int)
     conn = get_db_connection()
     query = '''
-                 SELECT b.booking_id, b.seat_assignment, b.seat2, b.seat3, b.seat4,
+                 SELECT b.booking_id, b.seat_assignment, b.seat2, b.seat3, b.seat4, b.paymentprice,
                      p.first_name, p.last_name,
                    f.origin, f.destination, f.departure_time, f.flight_id
             FROM bookings b
@@ -302,13 +308,21 @@ def booking_confirmation(booking_id):
         '''
 
     booking_details = conn.execute(query, (booking_id,)).fetchone()
-    #receipt
     conn.close()
     
     if booking_details is None:
         return "Booking Not Found", 404
 
-    return render_template('booking_confirmation.html', booking=booking_details)
+    return render_template(
+        'booking_confirmation.html',
+        booking=booking_details,
+        transactiontime=transactiontime,
+        paymentprice=paymentprice,
+        paymentchoice=paymentchoice,
+        businessclass=businessclass,
+        premiumeconomyclass=premiumeconomyclass,
+        seat_number=seat_number,
+    )
 
 @app.route('/seats/<int:flight_id>', methods=['GET', 'POST'])
 def seats(flight_id):
@@ -402,30 +416,91 @@ def payment(booking_id, flight_id):
         JOIN flights AS f ON f.flight_id = b.flight_id
         WHERE b.booking_id = ? AND b.flight_id = ?
     ''', (booking_id, flight_id)).fetchone()
-    conn.close()
 
     if payment_details is None:
         return 'Booking Not Found', 404
 
+    selected_seats = conn.execute('''SELECT 
+        seat_assignment,
+        seat2,
+        seat3,
+        seat4
+    FROM bookings WHERE booking_id = ?''', (booking_id,)).fetchall()
+
+    airplane_type = conn.execute('SELECT airplane_type FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()['airplane_type']
+
+    price = conn.execute('SELECT price FROM flights WHERE flight_id = ?', (flight_id,)).fetchone()['price']
+
+    booked_seats = [
+        seat 
+        for row in selected_seats
+        for seat in row 
+        if seat]
+    seat_number = len(booked_seats)
+    businessclass = sum(int(seat[:-1]) in (1, 2, 3, 4) for seat in booked_seats)
+    if airplane_type == 'Airbus A320' or airplane_type == 'Airbus A330':
+        premium_rows = (5, 6, 7)
+    else:
+        premium_rows = (5, 6, 7, 8, 9, 10)
+    premiumeconomyclass = sum(
+    int(seat[:-1]) in premium_rows and int(seat[:-1]) not in (1, 2, 3, 4)
+    for seat in booked_seats)
+
+    paymentprice = 0
+    paymentprice += businessclass * price * 1.5
+    paymentprice += premiumeconomyclass * price * 1.25
+    paymentprice += (seat_number - businessclass - premiumeconomyclass) * price
+
     frequent_flyer_pts = payment_details['frequent_flyer_pts'] or 0
     flightcost = payment_details['price']
-    tooexpensive = frequent_flyer_pts < flightcost * 2
+    tooexpensive = frequent_flyer_pts < paymentprice * 2
+    conn.close()
 
     if request.method == 'POST':
+        transactiontime = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         if request.form.get('paymentchoice') == 'card':
             entered_first = request.form.get('first_name')
             entered_last = request.form.get('last_name')
-            card_num = request.form.get('card_num')
-            expiry = request.form.get('expiry')
-            cvv = request.form.get('cvv')
-
             if entered_first != session['first'] or entered_last != session['last']:
+                namemismatch = True
+            else:
+                namemismatch = False
+
+            card_num = request.form.get('card_num', '').strip()
+            if len(card_num) != 19:
+                falsecardnum = True
+            else:
+                falsecardnum = False
+
+            expiry = request.form.get('expiry', '').strip()
+            if not expiry:
+                falseexpiry = True
+            else:
+                todaysdate = date.today().replace(day=1)
+                try:
+                    expiry_date = datetime.strptime(expiry, '%Y-%m').date()
+                except ValueError:
+                    falseexpiry = True
+                else:
+                    falseexpiry = expiry_date < todaysdate
+            cvv = request.form.get('cvv', '').strip()
+            if len(cvv) not in (3, 4):
+                falsecvv = True
+            else:
+                falsecvv = False
+
+            if falsecardnum == True or falseexpiry == True or falsecvv == True or namemismatch == True:
                 return render_template(
                 'payment.html',
-                error=None,
-                booking_id=booking_id,
-                flight_id=flight_id,
-                namemismatch=True,
+            booking_id=booking_id,
+            flight_id=flight_id,
+            paymentprice=paymentprice,
+            frequent_flyer_pts=frequent_flyer_pts,
+            falsecardnum=falsecardnum,
+            falseexpiry=falseexpiry,
+            falsecvv=falsecvv,
+            namemismatch=namemismatch,
+            tooexpensive=tooexpensive
                 )
 
             else:
@@ -444,9 +519,15 @@ def payment(booking_id, flight_id):
             if tooexpensive:
                 return redirect(url_for(
                     'payment',
-                    booking_id=booking_id,
-                    flight_id=flight_id,
-                    tooexpensive=True,
+            booking_id=booking_id,
+            flight_id=flight_id,
+            paymentprice=paymentprice,
+            frequent_flyer_pts=frequent_flyer_pts,
+            falsecardnum=falsecardnum,
+            falseexpiry=falseexpiry,
+            falsecvv=falsecvv,
+            namemismatch=namemismatch,
+            tooexpensive=tooexpensive
                 ))
 
             conn = get_db_connection()
@@ -462,8 +543,17 @@ def payment(booking_id, flight_id):
             ''', (booking_id,))
             conn.commit()
             conn.close()
-        
-        return redirect(url_for('booking_confirmation', booking_id=booking_id))
+
+        return redirect(url_for(
+            'booking_confirmation',
+            booking_id=booking_id,
+            paymentprice=paymentprice,
+            paymentchoice=request.form.get('paymentchoice'),
+            transactiontime=transactiontime,
+            businessclass=businessclass,
+            premiumeconomyclass=premiumeconomyclass,
+            seat_number=seat_number
+        ))
         
     else:
         return render_template(
@@ -471,10 +561,9 @@ def payment(booking_id, flight_id):
             error=None,
             booking_id=booking_id,
             flight_id=flight_id,
-            tooexpensive=tooexpensive,
-            namemismatch=False,
+            paymentprice=paymentprice,
             frequent_flyer_pts=frequent_flyer_pts,
-            flightcost=flightcost
+            tooexpensive=tooexpensive,
         )
 
 @app.route('/myflights')

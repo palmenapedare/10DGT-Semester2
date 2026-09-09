@@ -15,7 +15,8 @@
         #cardDetails { display: none; }
         form:has(#creditcard:checked) #cardDetails { display: block; }
         #pointsDetails { display: none; }
-        form:has(#points:checked) #pointsDetails { display: block; }
+        form:has(#frequentflyerpoints:checked) #pointsDetails { display: block; }
+        .alert svg { width: 10px; height: 10px; }
     </style>
 </head>
 <body>
@@ -36,11 +37,17 @@
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
         <h1>Payment</h1> <!-- start of rendered info -->
+        <h2>The cost for today's booking will be: ${{ paymentprice }}</h2>
     </div>
 </div>
 
-<h3>1 Frequent Flyer Point = $0.50AUD</h3>
 
+<div class="parent-container" style="display: flex; justify-content: center; margin: 10px">
+<div class="card" style="width: 70rem; padding: 10px;">
+<div class="card-header" style="width: 68rem; padding: 10px;">
+    <h4 class="text-muted font-monospace text-uppercase">1 Frequent Flyer Point = $0.50AUD</h4>
+</div>
+    <div class="card-body" style="width: 68rem; padding: 10px;">
 <form method="POST">
         <div class="form-check">
                 <input class="form-check-input" type="radio" name="paymentchoice" id="frequentflyerpoints" value="points" {% if tooexpensive %}disabled{% endif %}>
@@ -52,19 +59,19 @@
 {% endif %}
 
         <div class="form-check">
-                <input class="form-check-input" type="radio" name="paymentchoice" id="creditcard" value="card">
+                <input class="form-check-input" type="radio" name="paymentchoice" id="creditcard" value="card" {% if tooexpensive %}checked{% endif %}>
                 <label class="form-check-label" for="creditcard">Credit Card</label>
         </div>
 
 <div id="cardDetails">
     <div class="row g-3 mb-3">
         <div class="col-md-6">
-            <label class="form-label fw-bold">First Name</label>
+            <label class="form-label fw-bold">Cardholder First Name</label>
             <input type="text" class="form-control" name="first_name" value="{{ session.get('first', '') }}" autocomplete="given-name" placeholder="e.g. Jane">
         </div>
 
         <div class="col-md-6">
-            <label class="form-label fw-bold">Last Name</label>
+            <label class="form-label fw-bold">Cardholder Last Name</label>
             <input type="text" class="form-control" name="last_name" value="{{ session.get('last', '') }}" autocomplete="family-name" placeholder="e.g. Doe">
         </div>
     </div>
@@ -75,27 +82,63 @@
         </div>
 
         <div class="mb-4">
-            <label class="form-label fw-bold">Card Number</label>
-            <input type="text" class="form-control" name="card_num" autocomplete="off">
+            <label class="form-label fw-bold">Credit Card Number</label>
+            <input type="text" class="form-control" name="card_num" autocomplete="off" placeholder="e.g. 1234 5678 9012 3456">
         </div>
+
+{% if falsecardnum == True %}
+<div class="alert alert-primary d-flex align-items-center" role="alert">
+  <svg xmlns="http://www.w3.org/2000/svg" class="bi flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+  </svg>
+  <div>
+    This card number is invalid.
+  </div>
+</div>
+{% endif %}
 
         <div class="mb-4">
             <label class="form-label fw-bold">Expiry Date</label>
-            <input type="date" class="form-control" name="expiry" autocomplete="off">
+            <input type="month" class="form-control" name="expiry" autocomplete="off">
         </div>
 
+        {% if falseexpiry == True %}
+<div class="alert alert-primary d-flex align-items-center" role="alert">
+  <svg xmlns="http://www.w3.org/2000/svg" class="bi flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+  </svg>
+  <div>
+    This expiry date is before today's date.
+  </div>
+</div>
+        {% endif %}
+
         <div class="mb-4">
-            <label class="form-label fw-bold">Security Code/ CVV</label>
-            <input type="text" class="form-control" name="cvv" autocomplete="off">
+            <label class="form-label fw-bold">Card Verification Value/ CVV</label>
+            <input type="text" class="form-control" name="cvv" autocomplete="off" placeholder="e.g. 123">
         </div>
 </div>
+
+        {% if falsecvv == True %}
+<div class="alert alert-primary d-flex align-items-center" role="alert">
+  <svg xmlns="http://www.w3.org/2000/svg" class="bi flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+  </svg>
+  <div>
+    This CVV is invalid.
+  </div>
+</div>
+        {% endif %}
 
     <div class="d-flex justify-content-between align-items-center">
         <a href="/" class="text-decoration-none text-muted">Cancel & Go Back</a>
         <button type="submit" class="btn btn-orange px-5 py-2">Submit Payment</button>
     </div>
 </form>
-        
+</div>
+</div>
+</div>
+
 {% if namemismatch %}
     <div class="parent-container" style="display: flex; justify-content: center; margin: 10px;">
     <div class="card" style="width: 18rem;">
