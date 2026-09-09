@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seat Selection - Boeing 737</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
             --bg-color: #f4f6f9;
             --plane-bg: #ffffff;
             --plane-border: #cbd5e1;
-            --business-class: #991b1b;
-            --business-class-hover: #7f1d1d;
-            --premium-economy-class: #0284c7;
-            --premium-economy-class-hover: #0369a1;
-            --economy-class: #1e40af;
-            --economy-class-hover: #1e3a8a;
-            --selected: #22c55e;
+            --business-class: rgb(138, 2, 2);
+            --business-class-hover: rgb(138, 2, 2);
+            --premium-economy-class: rgb(62, 181, 62);
+            --premium-economy-class-hover: rgb(62, 181, 62);
+            --economy-class: rgb(7, 71, 161);
+            --economy-class-hover: rgb(7, 71, 161);
+            --selected: #ff5100;
+            --unavailable: #94a3b8;
             --text-color: #1e293b;
         }
 
@@ -217,7 +219,7 @@
 
         .confirm-btn {
             background-color: var(--economy-class);
-            color: white;
+            color: #ff5100;
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
@@ -242,9 +244,9 @@
     <h2>Select Your Seat</h2>
 
     <div class="legend">
-        <div class="legend-item"><div class="legend-box" style="background: var(--business-class);"></div> First Class</div>
-        <div class="legend-item"><div class="legend-box" style="background: var(--premium-economy-class);"></div> Delta Comfort</div>
-        <div class="legend-item"><div class="legend-box" style="background: var(--economy-class);"></div> Delta Main</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--business-class);"></div> Business Class</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--premium-economy-class);"></div> Premium Economy</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--economy-class);"></div> Economy Class</div>
         <div class="legend-item"><div class="legend-box" style="background: var(--selected);"></div> Selected</div>
     </div>
 
@@ -272,13 +274,13 @@
     const selectedSeats = new Set();
 
     const layout = [
-        { type: 'label', text: 'First Class' },
+        { type: 'label', text: 'Business Class' },
         { row: 1, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
         { row: 2, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
         { row: 3, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
         { row: 4, seats: ['A', 'B', 'C', 'D'], class: 'business-class' },
         
-        { type: 'label', text: 'Delta Comfort' },
+        { type: 'label', text: 'Premium Economy' },
         { row: 5, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
         { row: 6, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
         { row: 7, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
@@ -286,7 +288,7 @@
         { row: 9, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
         { row: 10, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'premiumeconomy-class' },
         
-        { type: 'label', text: 'Delta Main' },
+        { type: 'label', text: 'Economy Class' },
         { row: 11, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
         { type: 'exit' },
         { row: 12, seats: ['A', 'B', 'C', 'D', 'E', 'F'], class: 'economy-class' },
