@@ -59,8 +59,16 @@
                         
                         <p class="mb-0 text-black opacity-75">
                             Departure: {{ flight.departure_time }} 
-                            | Fare: ${{ flight.price }} AUD</p>
-
+                            | Fare: ${{ flight.paymentprice }} AUD</p>
+                        
+                        {% if flight.paid == 1 %}
+                        <p class="mb-0 text-black opacity-75">
+                            Paid: yes
+                        </p>
+                        {% elif flight.paid == 0 %}
+                        <p class="mb-0 text-danger">
+                            Paid: no </p>
+                        {% endif %}
                         <p class="mb-0 opacity-50" style="color: black;">
                             Seats:
                             {{ flight.seat_assignment }}

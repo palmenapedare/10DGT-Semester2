@@ -54,7 +54,8 @@ cursor.execute('''
         seat3 TEXT,
         seat4 TEXT,
         date_booked TEXT,
-        paid TEXT,
+        paid INT,
+        paymentprice INT,
         FOREIGN KEY(flight_id) REFERENCES flights(flight_id),
         FOREIGN KEY(passenger_id) REFERENCES    passengers(passenger_id)
     ) 
@@ -120,10 +121,23 @@ for passenger_id in range(1, 15): # Let's book the first 14 passengers onto rand
     selected_seats += [None] * (4 - len(selected_seats))
     date_listed = random_date = fake.date_between(start_date="-1y", end_date="today").strftime("%Y-%m-%d")
 
+    booked_seats = [seat for seat in selected_seats if seat is not None]
+    seat_number = len(booked_seats)
+    businessclass = sum(int(seat[:-1]) in (1, 2, 3, 4) for seat in booked_seats)
+    premium_rows = (5, 6, 7, 8, 9, 10) if airplane_type in ('Airbus A320', 'Airbus A330') else (5, 6, 7)
+    premiumeconomyclass = sum(
+    int(seat[:-1]) in premium_rows and int(seat[:-1]) not in (1, 2, 3, 4)
+    for seat in booked_seats
+    )
+    paymentprice = 0
+    paymentprice += businessclass * price * 1.5
+    paymentprice += premiumeconomyclass * price * 1.25
+    paymentprice += (seat_number - businessclass - premiumeconomyclass) * price
+
     cursor.execute('''
-        INSERT INTO bookings (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4, date_booked, paid)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (flight_id, passenger_id, *selected_seats, date_listed, 'True'))
+        INSERT INTO bookings (flight_id, passenger_id, seat_assignment, seat2, seat3, seat4, date_booked, paid, paymentprice)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (flight_id, passenger_id, *selected_seats, date_listed, 1, paymentprice))
 
 print("-> Updating passengers' number of bookings...")
 bookings_count = cursor.execute('''SELECT DISTINCT passenger_id, COUNT(*) as booking_count FROM bookings GROUP BY passenger_id''').fetchall()

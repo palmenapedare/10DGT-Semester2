@@ -516,7 +516,14 @@ def payment(booking_id, flight_id):
         return redirect(url_for('booking_confirmation', booking_id=booking_id, paymentprice=paymentprice, paymentchoice=request.form.get('paymentchoice'), transactiontime=transactiontime))
         
     else:
-        transactiontime = date.today().strftime("%Y-%m-%d %H:%M:%S")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+        UPDATE bookings
+        SET paid = 0
+        WHERE booking_id = ?
+        ''', (booking_id,))
         return render_template(
             'payment.html',
             error=None,
@@ -528,7 +535,6 @@ def payment(booking_id, flight_id):
             flightcost=flightcost,
             paymentprice=paymentprice,
             paymentchoice=request.form.get('paymentchoice'),
-            transactiontime=transactiontime
         )
 
 @app.route('/myflights')
@@ -541,14 +547,14 @@ def myflights():
 
     flights = conn.execute('''
          SELECT flights.*, bookings.seat_assignment, bookings.seat2,
-             bookings.seat3, bookings.seat4
+             bookings.seat3, bookings.seat4, bookings.paid, bookings.paymentprice
         FROM flights
         JOIN bookings ON flights.flight_id = bookings.flight_id
         WHERE bookings.passenger_id = ?
     ''', (passenger_id,)).fetchall()
 
     conn.close()
-    return render_template('myflights.html', flights=flights,)
+    return render_template('myflights.html', flights=flights)
 
 @app.route('/frequentflyer')
 def frequentflyer():
