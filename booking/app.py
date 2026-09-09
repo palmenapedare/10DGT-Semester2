@@ -55,7 +55,7 @@ def get_all_passengers():
     # Fetches all passengers in alphabetical order.
     conn = get_db_connection()
     passengers_query = '''
-        SELECT passenger_id, first_name, last_name, email, passport_num
+        SELECT passenger_id, first_name, last_name, email, passport_num, phone_num, number_of_bookings, frequent_flyer_pts
         FROM passengers
         ORDER BY first_name ASC
     '''
@@ -639,22 +639,16 @@ def admin():
     ).fetchone()['flight_quantity']
     profit_earned = conn.execute(
         '''
-        SELECT COALESCE(SUM(f.price), 0) AS profit_earned
+        SELECT COALESCE(SUM(b.paymentprice), 0) AS profit_earned
         FROM bookings AS b
         JOIN flights AS f ON b.flight_id = f.flight_id
         ''').fetchone()['profit_earned']
-
-    userbookings = 0
-    passenger_id = session.get('passenger_id')
-    if passenger_id is not None:
-        query = '''SELECT COUNT(*) AS user_bookings FROM bookings WHERE passenger_id = ?'''
-        userbookings = conn.execute(query, (passenger_id,)).fetchone()['user_bookings']
 
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
+    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id)
 
 @app.route('/alter', methods=['GET', 'POST'])
 @app.route('/alter/<int:flight_id_alter>', methods=['GET', 'POST'])
