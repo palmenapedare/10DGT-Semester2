@@ -151,6 +151,56 @@
     </div>
   </div>
 
+<div class="container" style="display: flex; justify-content: center; align-items: center;">
+<div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
+<h2 class="text-muted font-monospace text-uppercase">Bookings Search</h2>
+<input type="text" id="bookingidsearch" onkeyup="bookingidSearch()" placeholder="Search Booking ID...">
+<input type="text" id="secondpassengersearch" onkeyup="secondpassengerSearch()" placeholder="Search Passenger ID...">
+<input type="text" id="secondflightsearch" onkeyup="secondflightSearch()" placeholder="Search Flight ID...">
+</div>
+</div>
+
+<div class="container py-1" style="width: 100rem">
+  <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#3collapse" role="button" aria-expanded="false" aria-controls="collapse1">Bookings</button>
+    <div id="3collapse" class="collapse">
+      <div class="table-responsive">
+        <table class="table table-striped align-middle" id="bookingtable">
+      <thead>
+        <tr>
+          <th>Booking ID</th>
+          <th>Passenger ID</th>
+          <th>Passenger First Name</th>
+          <th>Passenger Last Name</th>
+          <th>Flight ID</th>
+          <th>Flight Origin</th>
+          <th>Flight Destination</th>
+          <th>Seats Booked</th>
+          <th>Payment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+          <td>{{ booking.booking_id }}</td>
+          <td>{{ booking.passenger_id }}</td>
+          <td>{{ booking.firstname }}</td>
+          <td>{{ booking.lastname }}</td>
+          <td>{{ booking.flight_id }}</td>
+          <td>{{ booking.origin }}</td>
+          <td>{{ booking.destination }}</td>
+          <td>{{ booking.seat_number }}</td>
+          <td>${{ booking.paymentprice }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9">No bookings found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
   <div class="container admin-summary">
 <div class="row">
   <div class="col-4">
@@ -255,6 +305,72 @@ function flightidSearch() {
 
   for (i = 0; i < tr.length; i++) {
     td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function bookingidSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("bookingidsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("bookingtable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function secondpassengerSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("secondpassengersearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("bookingtable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[1];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function secondflightSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("secondflightsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("bookingtable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[4];
     if (td) {
       txtValue = td.textContent || td.innerText;
       if (txtValue.toUpperCase().indexOf(filter) > -1) {

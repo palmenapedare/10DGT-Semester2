@@ -709,6 +709,7 @@ def admin():
     conn = get_db_connection()
     bookingnumber = get_booking_number()
     flight_id = request.args.get('flight_id', '').strip()
+    booking_id = request.args.get('booking_id', '').strip()
     
     query = '''
         SELECT f.*,
@@ -749,11 +750,24 @@ def admin():
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
-    bookings = conn.execute('''
-        SELECT booking_id, passenger_id, flight_id
-        FROM bookings
-        ORDER BY booking_id ASC
-    ''').fetchall()
+
+    query = '''
+        SELECT b.*,
+               p.first_name AS firstname,
+               p.last_name AS lastname,
+               f.origin,
+               f.destination,
+               (CASE WHEN b.seat_assignment IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN b.seat2 IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN b.seat3 IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN b.seat4 IS NOT NULL THEN 1 ELSE 0 END) AS seat_number
+        FROM bookings AS b
+        LEFT JOIN passengers AS p ON p.passenger_id = b.passenger_id
+        LEFT JOIN flights AS f ON f.flight_id = b.flight_id
+        ORDER BY b.booking_id ASC
+    '''
+    bookings = conn.execute(query).fetchall()
+
     conn.close()
     return render_template('admin.html', flights=flights, passengers=passengers, bookings=bookings, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings, individualbookings=individualbookings)
 
