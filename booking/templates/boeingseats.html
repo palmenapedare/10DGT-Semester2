@@ -12,8 +12,8 @@
             --plane-border: #cbd5e1;
             --business-class: rgb(138, 2, 2);
             --business-class-hover: rgb(138, 2, 2);
-            --premium-economy-class: rgb(62, 181, 62);
-            --premium-economy-class-hover: rgb(62, 181, 62);
+            --premiumeconomy-class: rgb(62, 181, 62);
+            --premiumeconomy-class-hover: rgb(62, 181, 62);
             --economy-class: rgb(7, 71, 161);
             --economy-class-hover: rgb(7, 71, 161);
             --selected: #ff5100;
@@ -240,18 +240,18 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container text-muted small font-monospace text-uppercase">
     <h2>Select Your Seat</h2>
 
     <div class="legend">
-        <div class="legend-item"><div class="legend-box" style="background: var(--business-class);"></div> Business Class</div>
-        <div class="legend-item"><div class="legend-box" style="background: var(--premium-economy-class);"></div> Premium Economy</div>
-        <div class="legend-item"><div class="legend-box" style="background: var(--economy-class);"></div> Economy Class</div>
+        <div class="legend-item"><div class="legend-box text-muted small font-monospace text-uppercase" style="background: var(--business-class);"></div> Business Class</div>
+        <div class="legend-item"><div class="legend-box text-muted small font-monospace text-uppercase" style="background: var(--premium-economy-class);"></div> Premium Economy</div>
+        <div class="legend-item"><div class="legend-box text-muted small font-monospace text-uppercase" style="background: var(--economy-class);"></div> Economy Class</div>
         <div class="legend-item"><div class="legend-box" style="background: var(--selected);"></div> Selected</div>
     </div>
 
     <div class="fuselage">
-        <div class="cockpit-indicator">Front of Aircraft</div>
+        <div class="cockpit-indicator text-muted small font-monospace text-uppercase">Aircraft Front</div>
         <div id="cabin-map"></div>
     </div>
 
@@ -261,7 +261,7 @@
         <input type="hidden" id="selected_seat3_input" name="selected_seat3" value="">
         <input type="hidden" id="selected_seat4_input" name="selected_seat4" value="">
         <div class="booking-summary">
-        <div class="summary-info">
+        <div class="summary-info text-muted small font-monospace text-uppercase">
             <h3>Selected Seats</h3>
             <div class="selected-seats-list" id="selected-seats">None</div>
         </div>

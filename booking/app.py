@@ -55,9 +55,13 @@ def get_all_passengers():
     # Fetches all passengers in alphabetical order.
     conn = get_db_connection()
     passengers_query = '''
-        SELECT passenger_id, first_name, last_name, email, passport_num, phone_num, number_of_bookings, frequent_flyer_pts
-        FROM passengers
-        ORDER BY first_name ASC
+        SELECT p.passenger_id, p.first_name, p.last_name, p.email,
+               p.passport_num, p.phone_num, p.frequent_flyer_pts,
+               COUNT(b.booking_id) AS number_of_bookings
+        FROM passengers AS p
+        LEFT JOIN bookings AS b ON b.passenger_id = p.passenger_id
+        GROUP BY p.passenger_id
+        ORDER BY p.first_name ASC
     '''
 
     db_passengers = conn.execute(passengers_query).fetchall()
@@ -129,6 +133,7 @@ def index():
             f.destination,
             f.departure_time,
             f.capacity,
+            f.status,
             CASE
                 WHEN substr(f.departure_time, 1, 10) IN (?, ?)
                 THEN f.price * 0.5
@@ -196,14 +201,8 @@ def user():
         ffopt_choice = request.form.get('ffopt_choice')
         print("Session data set!")
 
-        #if not all(first, last, email, passport):
-            #return render_template('login.html', error="Please complete all fields.")
-
-        # 2. Insert the customer into the passengers table securely using tuple syntax
         cursor = conn.cursor()
-        existing = cursor.execute(
-            'SELECT passenger_id from passengers WHERE email = ? AND passport_num = ?', (email, passport)
-        ).fetchone()
+        existing = cursor.execute('SELECT passenger_id from passengers WHERE email = ? AND passport_num = ?', (email, passport)).fetchone()
 
         if existing:
             passenger_id = existing["passenger_id"]
@@ -452,6 +451,10 @@ def payment(booking_id, flight_id):
     paymentprice += premiumeconomyclass * price * 1.25
     paymentprice += (seat_number - businessclass - premiumeconomyclass) * price
 
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE bookings SET paymentprice = ? WHERE booking_id = ?''', (paymentprice, booking_id,))
+    conn.commit()
+
     frequent_flyer_pts = payment_details['frequent_flyer_pts'] or 0
     flightcost = payment_details['price']
     tooexpensive = frequent_flyer_pts < paymentprice * 2
@@ -577,7 +580,7 @@ def myflights():
 
     flights = conn.execute('''
          SELECT flights.*, bookings.seat_assignment, bookings.seat2,
-             bookings.seat3, bookings.seat4
+             bookings.seat3, bookings.seat4, bookings.paymentprice
         FROM flights
         JOIN bookings ON flights.flight_id = bookings.flight_id
         WHERE bookings.passenger_id = ?
@@ -605,6 +608,7 @@ def frequentflyer():
             f.destination,
             f.departure_time,
             f.capacity,
+            f.status,
             CASE
                 WHEN substr(f.departure_time, 1, 10) IN (?, ?)
                 THEN f.price * 0.5
@@ -737,6 +741,11 @@ def admin():
     userbookings = conn.execute('''
         SELECT COUNT(*) AS userbookings FROM bookings WHERE passenger_id = ?''', (session.get('passenger_id'),)).fetchone()['userbookings']
 
+    individualbookings = conn.execute('''
+        SELECT COUNT(DISTINCT passenger_id) AS individualbookings
+        FROM bookings
+    ''').fetchone()['individualbookings']
+
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
@@ -746,7 +755,7 @@ def admin():
         ORDER BY booking_id ASC
     ''').fetchall()
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, bookings=bookings, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
+    return render_template('admin.html', flights=flights, passengers=passengers, bookings=bookings, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings, individualbookings=individualbookings)
 
 @app.route('/alterflight', methods=['GET', 'POST'])
 @app.route('/alterflight/<int:flight_id_alter>', methods=['GET', 'POST'])
@@ -804,14 +813,15 @@ def alterbooking(booking_id_alter=None):
         return redirect(url_for('admin'))
     
     conn = get_db_connection()
-    flight = conn.execute(
-        'SELECT * FROM flights WHERE flight_id = ?',
+    booking = conn.execute(
+        'SELECT * FROM bookings WHERE booking_id = ?',
         (booking_id_alter,)
     ).fetchone()
-    flights = conn.execute(
-        '''SELECT DISTINCT flight_id FROM flights ORDER BY flight_id ASC'''
-    ).fetchall()
     choice = request.form.get('change_time', '').strip()
+
+    if booking is None:
+        conn.close()
+        return 'Booking not found', 404
     
     if request.method == 'POST' and choice == '1':
         conn.execute(
@@ -819,6 +829,8 @@ def alterbooking(booking_id_alter=None):
             (booking_id_alter,)
         )
         conn.commit()
+        conn.close()
+        return redirect(url_for('admin'))
 
     elif request.method == 'POST' and choice == '2':
         conn.execute(
@@ -830,9 +842,8 @@ def alterbooking(booking_id_alter=None):
     conn.close()
     
     if request.method == 'POST':
-        return redirect(url_for('alterflight', flight_id_alter=booking_id_alter))
-    return render_template('alterflight.html', flight=flight, flights=flights)
+        return redirect(url_for('alterbooking', booking_id_alter=booking_id_alter))
+    return render_template('alterbooking.html', booking=booking)
     
-
 if __name__ == '__main__':
     app.run(debug=True, port=8000) #added port as error was happening and keeping it consistent fixed it. don't know why

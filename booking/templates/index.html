@@ -11,6 +11,7 @@
         .navbar { background-color: white; border-bottom: 3px solid var(--jetstar-orange); }
         .hero-search { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -50px; }
         .btn-orange { background-color: var(--jetstar-orange); color: white; font-weight: bold; }
+        .btn-cancelled { background-color: gray; color: white; font-weight: bold; border: 1px black double}
         .btn-orange:hover { background-color: white; color: white; }
         .flight-card { border: none; border-left: 5px solid var(--jetstar-orange); transition: transform 0.2s; }
         .flight-card:hover { transform: scale(1.01); }
@@ -25,9 +26,9 @@
         <div class="navbar-nav ms-auto">
             <a class="nav-link active" href="/login">Login</a>
             <a class="nav-link active" href="/logout">Logout</a>
-            <a class="nav-link" href="/myflights">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/adminlogin">Admin Login</a>
-            <a class="nav-link" href="/frequentflyer">Frequent Flyer</a>
+            <a class="nav-link active" href="/myflights">My Bookings</a>
+            <a class="nav-link active" href="/adminlogin">Admin Login</a>
+            <a class="nav-link active" href="/frequentflyer">Frequent Flyer</a>
         </div>
     </div>
 </nav>
@@ -98,6 +99,8 @@
                                 <div class="text-danger">Sold Out</div>
                             {% elif flight.timebasedsale %}
                                 <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">SALE!</a>
+                            {% elif flight.status == 'Cancelled' %}
+                                <a class="btn btn-sm btn-cancelled px-4">Cancelled</a>
                             {% else %}
                                 <a href="/book/{{ flight.flight_id }}" class="btn btn-sm btn-orange px-4">Book</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->
                             {% endif %}

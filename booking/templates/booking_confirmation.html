@@ -19,13 +19,17 @@
         :root { --jetstar-orange: #ff5100; --bg-light: #f4f4f4; }
         body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; }
         .ticket-card { border: none; border-top: 8px solid var(--jetstar-orange); border-radius: 8px; background: white; }
-    </style>
+        #receipt .list-group-item { break-inside: avoid; page-break-inside: avoid; }
+</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-<div class="container py-5" id="boardingpass">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
+        <div class="col-12 col-lg-6" id="boardingpass">
+        <div class="text-center">
             <div class="text-success display-4 mb-3">✓</div>
             <h2 class="fw-bold mb-4">You're cleared for takeoff!</h2>
             
@@ -54,11 +58,13 @@
                     <strong>{{ booking.departure_time }}</strong>
                 </div>
             </div>
+            </div>
+            </div>
             <div class="container text-center">
 <button class="btn btn-orange" style="margin-top: 10px; margin-bottom: 10px; justify-self: center;" onclick="downloadPDF2()" download="Receipt:INV{{ booking.booking_id }}">Download Boarding Pass as PDF</button>
 </div>
-            <a href="/" class="btn btn-outline-dark px-4">Back to Search</a>
-            <a href="/myflights" class="btn btn-outline-dark px-4">To My Flights</a>
+            <a href="/" class="btn btn-outline-dark px-4" style="margin: 5px; justify-self: center; width: 10rem;">Back to Search</a>
+            <a href="/myflights" class="btn btn-outline-dark px-4" style="margin: 5px; justify-self: center; width: 10rem;">To My Flights</a>
         </div>
     </div>
 </div>
@@ -69,7 +75,7 @@
     Receipt | Invoice Number: INV-{{ booking.booking_id}}-{{ transactiontime[0:10]|replace(" ", "-") }}
   </div>
   <ul class="list-group list-group-flush">
-    <li class="list-group-item">Cost: ${{ paymentprice }}</li>
+    <li class="list-group-item text-black">Cost: ${{ paymentprice }}</li>
     <li class="list-group-item">Business Class Seats: {{businessclass}}</li>
     <li class="list-group-item">Premium Economy Seats: {{premiumeconomyclass}}</li>
     <li class="list-group-item">Economy Class Seats: {{seat_number - businessclass - premiumeconomyclass}}</li>
@@ -93,33 +99,44 @@
 </div>
 
 <script>
-function downloadPDF1() {
+async function downloadPDF1() {
     const element = document.getElementById("receipt");
-    
-    // Optional configuration for better formatting results
-    const opt = {
-        margin:       0.5,
-        filename:     'Receipt-{{ booking.booking_id }}.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 }, // Higher scale = crisper text rendering
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    
-    html2pdf().set(opt).from(element).save();
+    const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+    });
+    const pdf = new window.jspdf.jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+    const margin = 0.5;
+    const pageWidth = pdf.internal.pageSize.getWidth() - (margin * 2);
+    const pageHeight = pdf.internal.pageSize.getHeight() - (margin * 2);
+    const imageHeight = (canvas.height * pageWidth) / canvas.width;
+    const pageCount = Math.ceil(imageHeight / pageHeight);
+
+    for (let page = 0; page < pageCount; page += 1) {
+        if (page > 0) {
+            pdf.addPage();
+        }
+        pdf.addImage(canvas, 'JPEG', margin, margin - (page * pageHeight), pageWidth, imageHeight);
+    }
+
+    pdf.save('Receipt-{{ booking.booking_id }}.pdf');
 }
 </script>
 
 <script>
 function downloadPDF2() {
     const element = document.getElementById("boardingpass");
-    
-    // Optional configuration for better formatting results
+
     const opt = {
         margin:       0.5,
         filename:     'BoardingPass-{{ booking.booking_id }}.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 }, // Higher scale = crisper text rendering
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        html2canvas:  { scale: 1.5 }, // Higher scale = crisper text rendering
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] }
     };
     
     html2pdf().set(opt).from(element).save();

@@ -12,6 +12,7 @@
         .booking-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .btn-orange { background-color: var(--jetstar-orange); color: white; font-weight: bold; }
         .btn-orange:hover { background-color: #e64900; color: white; }
+        .btn-cancelled { background-color: gray; color: white; font-weight: bold; border: 1px black double}
     </style>
 </head>
 <body>
@@ -22,9 +23,9 @@
         <div class="navbar-nav ms-auto">
             <a class="nav-link active" href="/login">Login</a>
             <a class="nav-link active" href="/logout">Logout</a>
-            <a class="nav-link" href="/myflights">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/adminlogin">Admin Login</a>
-            <a class="nav-link" href="/frequentflyer">Frequent Flyer</a>
+            <a class="nav-link active" href="/myflights">My Bookings</a>
+            <a class="nav-link active" href="/adminlogin">Admin Login</a>
+            <a class="nav-link active" href="/frequentflyer">Frequent Flyer</a>
         </div>
     </div>
 </nav>
@@ -72,6 +73,8 @@
                                 <div class="text-danger">Sold Out</div>
                             {% elif option.timebasedsale %}
                                 <a href="/book/{{ option.flight_id }}" class="btn btn-sm btn-orange px-4">SALE!</a>
+                            {% elif option.status == 'Cancelled' %}
+                                <a class="btn btn-sm btn-cancelled px-4">Cancelled</a>
                             {% else %}
                                 <a href="/book/{{ option.flight_id }}" class="btn btn-sm btn-orange px-4">Book</a> <!-- BOOKING FORM [link is like /book/insert id e.g. Q67910]. <button> -> <a> -->
                             {% endif %}
@@ -88,10 +91,8 @@
 </div>
 
 
-<div class="row">
-  <div class="col-sm-6 mb-3 mb-sm-0">
-<div class="container" style="justify-content: center; display: flex; margin-top: 10px;">
-<div class="card" style="width: 37rem;">
+<div class="container" style="justify-content: center; display: flex; margin-top: 20px;">
+<div class="card" style="width: 75rem;">
  <div class="card-header">
     Here you can view your account information.
   </div>
@@ -105,28 +106,9 @@
   </div>
 </div>
 </div>
-</div>
 
-<div class="col-sm-6">
 <div class="container" style="justify-content: center; display: flex; margin-top: 10px;">
-<div class="card" style="width: 37rem;">
- <div class="card-header">
-    Best deals!
-  </div>
-  <div class="card-body">
-    <h5 class="card-title">Account Information:</h5>
-    <p class="card-text">First name: {{ session['first_name'] }}</p>
-    <p class="card-text">Last name: {{ session['last_name'] }}</p>
-    <p class="card-text">Email: {{ session['email'] }}</p>
-    <p class="card-text">Phone number: {{ session['phone_number'] }}</p>
-    <a href="/login" class="btn btn-orange">Edit Information</a>
-  </div>
-</div>
-</div>
-</div>
-
-<div class="container" style="justify-content: center; display: flex; margin-top: 10px; border-radius: 8px; border-color: darkgoldenrod; border: 2px solid;">
-<div class="alert alert-warning" role="alert" style="width: 50rem; margin-top: 10px;">
+<div class="alert alert-warning" role="alert" style="width: 50rem; margin-top: 10px; border-radius: 8px; border-color: darkgoldenrod; border: 2px solid;">
   <h4 class="alert-heading">Would you like to unsubscribe from the frequent flyer program?</h4> 
   <p>Your frequent flyer account is automatically connected to your profile when you log in; however, you can choose to erase your points and opt out of the program. Your points will be lost forever.</p>
   <hr>

@@ -22,14 +22,14 @@
         <div class="navbar-nav ms-auto">
             <a class="nav-link active" href="/login">Login</a>
             <a class="nav-link active" href="/logout">Logout</a>
-            <a class="nav-link" href="/myflights">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/adminlogin">Admin Login</a>
-            <a class="nav-link" href="/frequentflyer">Frequent Flyer</a>
+            <a class="nav-link active" href="/myflights">My Bookings</a>
+            <a class="nav-link active" href="/adminlogin">Admin Login</a>
+            <a class="nav-link active" href="/frequentflyer">Frequent Flyer</a>
         </div>
     </div>
 </nav>
 
-<h2 class="text-center mt-5">Alter Flight</h2>
+<h2 class="text-center mt-5">Alter Booking</h2>
     <div class="booking-box">
         <h3 class="mb-4 fw-bold">Flight #{{ booking.booking_id }}</h3>
         <p>Passenger ID: {{ booking.passenger_id }}, Flight ID: {{ booking.flight_id }}</p>

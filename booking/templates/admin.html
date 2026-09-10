@@ -42,12 +42,12 @@
         <div class="navbar-nav ms-auto">
             <a class="nav-link active" href="/login">Login</a>
             <a class="nav-link active" href="/logout">Logout</a>
-            <a class="nav-link" href="/myflights">My Bookings</a>
-            <a class="nav-link btn btn-outline-dark ms-lg-3" href="/adminlogin">Admin Login</a>
-            <a class="nav-link" href="/frequentflyer">Frequent Flyer</a>
+            <a class="nav-link active" href="/myflights">My Bookings</a>
+            <a class="nav-link active" href="/adminlogin">Admin Login</a>
+            <a class="nav-link active" href="/frequentflyer">Frequent Flyer</a>
         </div>
     </div>
-</nav>s
+</nav>
 
 <div style="background-color: #2d2d2d; height: 200px; width: 100%;">
     <div class="container pt-4 text-white">
@@ -151,15 +151,6 @@
     </div>
   </div>
 
-<div class="container" style="display: flex; justify-content: center; align-items: center;">
-<div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
-<h2 class="text-muted font-monospace text-uppercase">Flight Search</h2>
-<input type="text" id="flightidsearch" onkeyup="flightidSearch()" placeholder="Search Flight IDs...">
-<input type="text" id="originsearch" onkeyup="originSearch()" placeholder="Search origins...">
-<input type="text" id="destsearch" onkeyup="destSearch()" placeholder="Search using destinations...">
-</div>
-</div>
-
   <div class="container admin-summary">
 <div class="row">
   <div class="col-4">
@@ -211,7 +202,7 @@
             <div class="col-md-4">
                 <label class="form-label fw-bold">Booking ID</label>
                 <input type="text" name="booking_id" class="form-control" list="bookings"
-                       value="{{ selected_flight_id }}" placeholder="Type or select a current booking id">
+                       value="{{ selected_booking_id }}" placeholder="Type or select a current booking id">
                 <datalist id="bookings">
                     {% for booking in bookings %}
                         <option value="{{ booking.booking_id }}"></option>
@@ -367,7 +358,7 @@ function nameSearch() {
 <script>
 function bookingSearch() {
   var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("bookingssearch");
+  input = document.getElementById("bookingsearch");
   filter = input.value.toUpperCase();
   table = document.getElementById("passengertable");
   tr = table.getElementsByTagName("tr");
