@@ -16,6 +16,22 @@
         .flight-card:hover { transform: scale(1.01); }
         .price-tag { font-size: 1.5rem; color: var(--jetstar-orange); font-weight: bold; }
         .list-group-item.active { background-color: var(--jetstar-orange); border-color: var(--jetstar-orange); }
+        .admin-summary {
+          width: min(100%, 100rem);
+          margin: 0 auto;
+        }
+        .admin-summary > .row {
+          display: flex;
+          align-items: flex-start;
+          width: 100%;
+        }
+        .admin-summary > .row > .col-4 {
+          flex: 0 0 14rem;
+        }
+        .admin-summary > .row > .col-8 {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
     </style>
 </head>
 <body>
@@ -134,8 +150,17 @@
       </div>
     </div>
   </div>
+
+<div class="container" style="display: flex; justify-content: center; align-items: center;">
+<div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
+<h2 class="text-muted font-monospace text-uppercase">Flight Search</h2>
+<input type="text" id="flightidsearch" onkeyup="flightidSearch()" placeholder="Search Flight IDs...">
+<input type="text" id="originsearch" onkeyup="originSearch()" placeholder="Search origins...">
+<input type="text" id="destsearch" onkeyup="destSearch()" placeholder="Search using destinations...">
 </div>
-<div class="container" style="display: flex; justify-content: center;"
+</div>
+
+  <div class="container admin-summary">
 <div class="row">
   <div class="col-4">
     <div id="list-example" class="list-group">
@@ -144,7 +169,7 @@
       <a class="list-group-item list-group-item-action" href="#list-item-3">Control</a>
     </div>
   </div>
-  <div class="col-8" style="margin: 10px">
+  <div class="col-8" style="margin: 10px; margin-top: 20px">
     <div data-bs-spy="scroll" data-bs-target="#list-example" data-bs-smooth-scroll="true" class="scrollspy-example" tabindex="0">
       <h4 id="list-item-1">Bookings</h4>
       <p>There have been {{passengers_booked}} passenger/s booked. </p>
@@ -179,6 +204,8 @@
             </div>
         </form>
     </div>
+              <p>Would you like to alter a booking?</p>
+      <div class="container" style="margin-top: 70px;">
         <div class="hero-search mb-3">
         <form class="row g-3" method="get" action="{{ url_for('alterbooking') }}">
             <div class="col-md-4">
@@ -215,8 +242,12 @@
                 </div>
                     </div>
             </div>
+              </div>
         {% endfor %}
       </div>
+    </div>
+</div>
+
     </div>
 </div>
 </div>

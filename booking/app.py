@@ -740,8 +740,13 @@ def admin():
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
+    bookings = conn.execute('''
+        SELECT booking_id, passenger_id, flight_id
+        FROM bookings
+        ORDER BY booking_id ASC
+    ''').fetchall()
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
+    return render_template('admin.html', flights=flights, passengers=passengers, bookings=bookings, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
 
 @app.route('/alterflight', methods=['GET', 'POST'])
 @app.route('/alterflight/<int:flight_id_alter>', methods=['GET', 'POST'])
