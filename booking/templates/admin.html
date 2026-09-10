@@ -39,11 +39,20 @@
     </div>
 </div>
 
-<div class="container py-5">
+<div class="container" style="display: flex; justify-content: center; align-items: center;">
+<div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
+<h2 class="text-muted font-monospace text-uppercase">Flight Search</h2>
+<input type="text" id="flightidsearch" onkeyup="flightidSearch()" placeholder="Search Flight IDs...">
+<input type="text" id="originsearch" onkeyup="originSearch()" placeholder="Search origins...">
+<input type="text" id="destsearch" onkeyup="destSearch()" placeholder="Search using destinations...">
+</div>
+</div>
+
+<div class="container py-1" style="width: 100rem">
   <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#1collapse" role="button" aria-expanded="false" aria-controls="collapse1">Flight bookings</button>
     <div id="1collapse" class="collapse">
       <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped align-middle" id="flighttable">
       <thead>
         <tr>
           <th>Flight</th>
@@ -81,12 +90,22 @@
     </table>
   </div>
 </div>
+</div>
 
-<div class="container py-5">
+<div class="container" style="display: flex; justify-content: center; align-items: center;">
+<div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
+<h2 class="text-muted font-monospace text-uppercase">Passenger Search</h2>
+<input type="text" id="passengeridsearch" onkeyup="passengeridSearch()" placeholder="Search Passenger ID...">
+<input type="text" id="namesearch" onkeyup="nameSearch()" placeholder="Search using names...">
+<input type="text" id="bookingsearch" onkeyup="bookingSearch()" placeholder="Search using number of bookings...">
+</div>
+</div>
+
+<div class="container py-1" style="width: 100rem;">
   <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#2collapse" role="button" aria-expanded="false" aria-controls="collapse2">Passengers</button>
     <div id="2collapse" class="collapse">
       <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped align-middle" id="passengertable">
         <thead>
          <tr>
           <th>Passenger ID</th>
@@ -108,7 +127,7 @@
           <td>{{ passenger.passport_num }}</td>
           <td>{{ passenger.phone_num }}</td>
           <td>{{ passenger.number_of_bookings }}</td>
-        </tr>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
@@ -116,7 +135,7 @@
     </div>
   </div>
 </div>
-
+<div class="container" style="display: flex; justify-content: center;"
 <div class="row">
   <div class="col-4">
     <div id="list-example" class="list-group">
@@ -125,14 +144,14 @@
       <a class="list-group-item list-group-item-action" href="#list-item-3">Control</a>
     </div>
   </div>
-  <div class="col-8">
+  <div class="col-8" style="margin: 10px">
     <div data-bs-spy="scroll" data-bs-target="#list-example" data-bs-smooth-scroll="true" class="scrollspy-example" tabindex="0">
       <h4 id="list-item-1">Bookings</h4>
       <p>There have been {{passengers_booked}} passenger/s booked. </p>
-      {% if session.get('bookingnumber') == None %}
-      <p>There have been 0 booking/s in the active session.</p>
+      {% if bookingnumber == None %}
+      <p>There have been 0 bookings .</p>
       {% else %}
-      <p>There have been {{ session.get('bookingnumber') }} booking/s in the active session.</p>
+      <p>There are {{ bookingnumber }} booking/s recorded in the database.</p>
       {% endif %}
       {% if session.get('passenger_id') %}
       <p>The logged in user, {{ session.get('first', '') }} {{ session.get('last', '') }}, has {{ userbookings }} booking/s.</p>
@@ -144,7 +163,7 @@
       <p>Would you like to list a flight as delayed?</p>
       <div class="container" style="margin-top: 70px;">
     <div class="hero-search mb-3">
-        <form class="row g-3" method="get" action="{{ url_for('alter') }}">
+        <form class="row g-3" method="get" action="{{ url_for('alterflight') }}">
             <div class="col-md-4">
                 <label class="form-label fw-bold">Flight ID</label>
                 <input type="text" name="flight_id" class="form-control" list="origin-cities"
@@ -152,6 +171,23 @@
                 <datalist id="origin-cities">
                     {% for flight in flights %}
                         <option value="{{ flight.flight_id }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-orange w-100">Go</button>
+            </div>
+        </form>
+    </div>
+        <div class="hero-search mb-3">
+        <form class="row g-3" method="get" action="{{ url_for('alterbooking') }}">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Booking ID</label>
+                <input type="text" name="booking_id" class="form-control" list="bookings"
+                       value="{{ selected_flight_id }}" placeholder="Type or select a current booking id">
+                <datalist id="bookings">
+                    {% for booking in bookings %}
+                        <option value="{{ booking.booking_id }}"></option>
                     {% endfor %}
                 </datalist>
             </div>
@@ -185,8 +221,140 @@
 </div>
 </div>
 </div>
+</div>
 
-<!-- written using copilot as I don't know javascript -->
+<script>
+function flightidSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("flightidsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("flighttable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function originSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("originsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("flighttable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[1];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function destSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("destsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("flighttable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[2];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function passengeridSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("passengeridsearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("passengertable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function nameSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("namesearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("passengertable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[1];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script>
+function bookingSearch() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("bookingssearch");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("passengertable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[6];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
 <script>
   const airportCoordinates = {
     Adelaide: { latitude: -34.9285, longitude: 138.6007 },

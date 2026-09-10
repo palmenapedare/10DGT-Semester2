@@ -93,7 +93,8 @@ def get_booking_number():
     ).fetchall()
     conn.close()
     for i in rows:
-        bookingnumber = +1
+        bookingnumber += 1
+    return bookingnumber
 
 @app.route('/api/booked-seats')
 def api_booked_seats():
@@ -733,15 +734,18 @@ def admin():
         JOIN flights AS f ON b.flight_id = f.flight_id
         ''').fetchone()['profit_earned']
 
+    userbookings = conn.execute('''
+        SELECT COUNT(*) AS userbookings FROM bookings WHERE passenger_id = ?''', (session.get('passenger_id'),)).fetchone()['userbookings']
+
     booking_ids = [row['booking_id'] for row in conn.execute('''
         SELECT booking_id FROM bookings
         ''').fetchall()] #order by asc? not working when I tried
     conn.close()
-    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id)
+    return render_template('admin.html', flights=flights, passengers=passengers, flight_quantity=flight_quantity, passengers_booked=passengers_booked, profit_earned=profit_earned, booking_ids=booking_ids, bookingnumber=bookingnumber, selected_flight_id=flight_id, userbookings=userbookings)
 
-@app.route('/alter', methods=['GET', 'POST'])
-@app.route('/alter/<int:flight_id_alter>', methods=['GET', 'POST'])
-def alter(flight_id_alter=None):
+@app.route('/alterflight', methods=['GET', 'POST'])
+@app.route('/alterflight/<int:flight_id_alter>', methods=['GET', 'POST'])
+def alterflight(flight_id_alter=None):
     if flight_id_alter is None:
         flight_id_alter = request.args.get('flight_id', type=int)
     if flight_id_alter is None:
@@ -767,7 +771,7 @@ def alter(flight_id_alter=None):
         alter_date = request.form.get('alter_date', '').strip()
         if not alter_date:
             conn.close()
-            return render_template('alter.html', flight=flight, flights=flights, error='Please enter a new date and time.'), 400
+            return render_template('alterflight.html', flight=flight, flights=flights, error='Please enter a new date and time.'), 400
 
         alter_date = alter_date.replace('T', ' ')
         conn.execute(
@@ -783,8 +787,47 @@ def alter(flight_id_alter=None):
         return 'Flight not found', 404
 
     if request.method == 'POST':
-        return redirect(url_for('alter', flight_id_alter=flight_id_alter))
-    return render_template('alter.html', flight=flight, flights=flights)
+        return redirect(url_for('alterflight', flight_id_alter=flight_id_alter))
+    return render_template('alterflight.html', flight=flight, flights=flights)
+
+@app.route('/alterbooking', methods=['GET', 'POST'])
+@app.route('/alterbooking/<int:booking_id_alter>', methods=['GET', 'POST'])
+def alterbooking(booking_id_alter=None):
+    if booking_id_alter is None:
+            booking_id_alter = request.args.get('booking_id', type=int)
+    if booking_id_alter is None:
+        return redirect(url_for('admin'))
+    
+    conn = get_db_connection()
+    flight = conn.execute(
+        'SELECT * FROM flights WHERE flight_id = ?',
+        (booking_id_alter,)
+    ).fetchone()
+    flights = conn.execute(
+        '''SELECT DISTINCT flight_id FROM flights ORDER BY flight_id ASC'''
+    ).fetchall()
+    choice = request.form.get('change_time', '').strip()
+    
+    if request.method == 'POST' and choice == '1':
+        conn.execute(
+            'DELETE FROM bookings WHERE booking_id = ?',
+            (booking_id_alter,)
+        )
+        conn.commit()
+
+    elif request.method == 'POST' and choice == '2':
+        conn.execute(
+            'UPDATE bookings SET flight_id = ? WHERE booking_id = ?',
+            (request.form.get('alter_flight'), booking_id_alter,)
+        )
+        conn.commit()
+
+    conn.close()
+    
+    if request.method == 'POST':
+        return redirect(url_for('alterflight', flight_id_alter=booking_id_alter))
+    return render_template('alterflight.html', flight=flight, flights=flights)
+    
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000) #added port as error was happening and keeping it consistent fixed it. don't know why
