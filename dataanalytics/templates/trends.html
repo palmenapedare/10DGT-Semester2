@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% set title = "Trends" %}
+{% block content %}
+<div class="accordion" id="trends-accordion">
+  <details class="accordion-item" name="trends-accordion" open>
+    <summary class="accordion-header">Suburb Overview</summary>
+    <div class="accordion-body">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d21863.879481212756!2d138.73086124975117!3d-34.82580462741292!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ab74cbf22292a0d%3A0x1c033657a3510a20!2sVista%20SA%205091!5e0!3m2!1sen!2sau!4v1793583613083!5m2!1sen!2sau" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <p style="font-size: small; font: monospace small-caps;">A map of postcode 5091.</p>
+      <p>There are {{ database|length }} houses recorded in the database. Of these, {{ count5091 }} are located in 5091, and {{ count_above_million }} are above $1 million AUD; see below.</p>
+      <p>The median price is {{ mediancost }}, whereas the mean is {{meancost}}.
+        The median land size is {{ medianland }}, whereas the mean is {{ meanland }}.
+      </p>
+      <details>
+        <summary>Show sales over $1 million ({{ count_above_million }})</summary>
+        <table class="table table-striped-columns">
+          <thead>
+              <tr>
+                  <th scope="col">Address</th>
+                  <th scope="col">Sale date</th>
+                  <th scope="col">Amount ($)</th>
+                  <th scope="col">Bedrooms</th>
+                  <th scope="col">Landsize (m^2)</th>
+              </tr>
+          </thead>
+          <tbody>
+            {% for d in above_million %}
+              <tr>
+                  <th scope="row">{{ d["Address"] }}</th>
+                  <td>{{ d["Sale date"] }}</td>
+                  <td>{{ d["Amount ($)"] }}</td>
+                  <td>{{ d["Bedrooms"] }}</td>
+                  <td>{{ d["Land Size (m^2)"] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+      <p>For houses above $1 million, the measures of centre regarding cost and landsize go up significantly.
+      </p>
+    </div>
+  </details>
+
+  <details class="accordion-item" name="trends-accordion">
+    <summary class="accordion-header">Time overview</summary>
+    <div class="accordion-body">
+      <p style="font-size: small; font: monospace small-caps;">Hi</p>
+      <p>normal text</p>
+    </div>
+  </details>
+
+  <details class="accordion-item" name="trends-accordion">
+    <summary class="accordion-header">Conclusion</summary>
+    <div class="accordion-body">
+      .
+    </div>
+  </details>
+</div>
+
+<!--search for measures of centre and range for any value, if time-->
+{% endblock %}

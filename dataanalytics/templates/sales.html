@@ -1,13 +1,23 @@
 {% extends "layout.html" %}
 {% set title = "Sales" %}
 {% block content %}
-<div class="container" style="display: grid; place-items: left; font-size:large; margin:20px; padding:10px; min-height:100px; background-color: rgb(247, 244, 244); align-content: center; border: 1px black solid">
+<div class="container-fluid" style="font-size:large; margin:0 0 20px; padding:10px; min-height:100px; background-color: rgb(247, 244, 244); border: 1px black solid">
 <div class="container-fluid p-3">
     <div class="col">
-    <img class="img-fluid" src="data:image/png;base64,{{ img_base64 }}" alt="Address v. Cost" style="min-height:400px; min-width:450px;">
+    <img class="img-fluid" src="data:image/png;base64,{{ address_img }}" alt="Address v. Cost" style="min-height:400px; min-width:450px;">
     </div>
     <div class="col">
     <p>See above a bar chart of all sales recorded in the RE analysis site CSV. To add more, please see the Data page.</p>
+    </div>
+</div>
+</div>
+<div class="container-fluid" style="font-size:large; margin:0 0 20px; padding:10px; min-height:100px; background-color: rgb(247, 244, 244); border: 1px black solid">
+<div class="container-fluid p-3">
+    <div class="col">
+    <img class="img-fluid" src="data:image/png;base64,{{ saledate_img }}" alt="Sale Date v. Cost" style="min-height:400px; min-width:450px;">
+    </div>
+    <div class="col">
+    <p>See above a line chart sale date compared to the cost of houses sold.</p>
     </div>
 </div>
 </div>
