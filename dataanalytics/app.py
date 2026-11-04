@@ -21,6 +21,10 @@ df.to_sql(name='data', con=conn, if_exists="replace", index=False)
 conn.close()
 
 @app.route('/')
+def chart():
+    return render_template('chart.html')
+
+@app.route('/')
 def index():
     print("index page")
     conn = sqlite3.connect('real_estate.db')

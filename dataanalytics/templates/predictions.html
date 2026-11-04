@@ -1,1 +1,20 @@
 <!-- form with input of bedrooms, land size estimate, etc etc and will output a price range-->
+{% extends "layout.html" %}
+{% set title = "Predictor" %}
+{% block content %}
+
+<div class="main-container">
+  <div class="row">
+    <div class="col">
+    <input type="text" id="floatingAddressvalue" class="form-control" placeholder="Address (street name)">
+    </div>
+    <div class="col">
+    <input type="text" id="floatingPostcodevalue" class="form-control" placeholder="Postcode">
+    </div>
+  </div>
+    <input type="text" id="floatingSuburb" class="form-control" placeholder="Suburb Name">
+  </div>
+</div>
+</div>
+
+{% endblock %}
