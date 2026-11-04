@@ -1,22 +1,50 @@
 {% extends "layout.html" %}
 {% set title = "Sales" %}
 {% block content %}
-<div class="container-fluid" style="font-size:large; margin:0 0 20px; padding:10px; min-height:100px; background-color: rgb(247, 244, 244); border: 1px black solid">
-<div class="container-fluid p-3">
-    <div class="col">
-    <img class="img-fluid" src="data:image/png;base64,{{ address_img }}" alt="Address v. Cost" style="min-height:400px; min-width:450px;">
-    </div>
-    <div class="col">
-    <p>See above a bar chart of all sales recorded in the RE analysis site CSV. To add more, please see the Data page.</p>
-    </div>
+<div class="container-fluid main-container justify-content-space-around" style="width: auto; margin: 12px;">
+<div class="row">
+  <div class="col">
+  <table class="table table-striped">
+  <thead>
+  <tr>
+    <th scope="col">#</th>
+    <th scope="col">Address</th>
+    <th scope="col">Sale date</th>
+    <th scope="col">Amount ($)</th>
+    <th scope="col">Bedrooms</th>
+    <th scope="col">Land size (m^2)</th>
+  </tr>
+  </thead>
+  <tbody>
+    {% for d in database %}
+    <tr>
+      <th scope="row">{{ loop.index }}</th> <!-- incremental increase -->
+      <td>{{ d[0] }}</td> 
+      <td>{{ d[1] }}</td> <!-- had "Sale date"-->
+      <td>{{ d[2] }}</td>
+      <td>{{ d[3] }}</td>
+      <td>{{ d[4] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="col">
+    <img class="img-fluid" src="data:image/png;base64,{{ address_base64 }}" alt="Address v. Cost" style="min-height:400px; width:700px;">
 </div>
 </div>
-<div class="container-fluid" style="font-size:large; margin:0 0 20px; padding:10px; min-height:100px; background-color: rgb(247, 244, 244); border: 1px black solid">
-<div class="container-fluid p-3">
+<div class="row">
     <div class="col">
-    <img class="img-fluid" src="data:image/png;base64,{{ saledate_img }}" alt="Sale Date v. Cost" style="min-height:400px; min-width:450px;">
+        <section class="card" style="max-height: 400px; max-width: 600px;">
+            <img src="{{ url_for('static', filename='38APerseveranceRd.jpeg') }}" class="card-img-top" alt="Image of 38A Perseverance Road">
+            <div class="card-body">
+                <p>- There are {{ database|length }} houses listed on the RE Predictor Website.</p>
+                <p>- The oldest sale date recorded is {{ timedelta }} days ago.</p>
+            </div>
+        </section>
     </div>
     <div class="col">
+    <img class="img-fluid" src="data:image/png;base64,{{ sale_date_cost_base64 }}" alt="Sale Date v. Cost" style="min-height:400px; width:700px; margin-top: 10px;">
     <p>See above a line chart sale date compared to the cost of houses sold.</p>
     </div>
 </div>

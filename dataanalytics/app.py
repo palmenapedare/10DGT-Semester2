@@ -44,6 +44,22 @@ def index():
 
 @app.route('/sales')
 def get_sales():
+    conn = sqlite3.connect('real_estate.db')
+    #table
+    query = '''
+        SELECT
+            d."Address",
+            d."Sale date",
+            d."Amount ($)",
+            d."Bedrooms",
+            d."Land Size (m^2)"
+        FROM data AS d
+        ORDER BY "Sale date" DESC
+    '''
+    sales_rows = conn.execute(query).fetchall()
+    addressquery = 'SELECT DISTINCT Address FROM data ORDER BY "Sale date" ASC'
+    addresslist = conn.execute(addressquery)
+    
     # graph 1, Address v Cost
     query = '''
            SELECT
@@ -74,8 +90,6 @@ def get_sales():
     address_buf.seek(0)
 
     address_base64 = base64.b64encode(address_buf.read()).decode("utf-8")
-
-    conn.close()
 
     #graph 2, Sale date v Cost
     query = '''
@@ -112,8 +126,18 @@ def get_sales():
 
     sale_date_cost_base64 = base64.b64encode(saledate_buf.getvalue()).decode("utf-8")
 
+    oldest_date = database["Sale date"].min().date()
+    oldestdate = oldest_date.strftime("%d-%m-%y")
+    timedelta = (datetime.today().date() - oldest_date).days
+
     conn.close()
-    return render_template('sales.html', address_img=address_base64, saledate_img=sale_date_cost_base64)
+    return render_template(
+        'sales.html',
+        database=sales_rows,
+        address_base64=address_base64,
+        sale_date_cost_base64=sale_date_cost_base64,
+        timedelta=timedelta
+    )
 
 @app.route('/trends')
 def trends():
@@ -203,16 +227,17 @@ def trends():
     date_fig = Figure()
     FigureCanvasAgg(date_fig)
     date_ax = date_fig.subplots()
-    date_ax.plot(database["Sale date"], database["Amount ($)"], label="Real Estate Sales", color="navy")
+    date_ax.bar(database["Sale date"], database["Amount ($)"], label="Real Estate Sales", color="navy")
     date_ax.tick_params(axis="x", labelrotation=45)
     date_fig.tight_layout()
     date_ax.set_title("Sale Date vs Amount")
     date_ax.set_ylabel("Amount ($)")
+    date_ax.set_xlabel("Sale date (x)")
         #line of best fit via numpy, has to be converted from database["Sale date"]
     sale_dates = database["Sale date"]
     days_since_first_sale = (sale_dates - sale_dates.min()).dt.days
     a, b = np.polyfit(days_since_first_sale, database["Amount ($)"], 1)
-    lineofbestfit = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
+    lineofbestfit1 = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
     date_ax.plot(
         sale_dates,
         a * days_since_first_sale + b,
@@ -230,6 +255,42 @@ def trends():
     oldest_date = database["Sale date"].min().date()
     oldestdate = oldest_date.strftime("%d-%m-%y")
     timedelta = (datetime.today().date() - oldest_date).days
+
+    #HOUSE SPECIFICS
+    query = '''SELECT d."Bedrooms", d."Amount ($)" from DATA as d ORDER BY "Bedrooms" ASC'''
+    bedrooms = pd.read_sql_query(query, conn)
+    bedrooms["Amount ($)"] = pd.to_numeric(
+        bedrooms["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+    )
+
+    bedrooms_fig = Figure()
+    FigureCanvasAgg(bedrooms_fig)
+    bedrooms_ax = bedrooms_fig.subplots()
+    bedrooms_ax.bar(
+        bedrooms["Bedrooms"],
+        bedrooms["Amount ($)"],
+        label="Real Estate Sales",
+        color="lightblue",
+    )
+    bedrooms_fig.tight_layout()
+    bedrooms_ax.set_title("Bedrooms vs Amount")
+    bedrooms_ax.set_ylabel("Amount ($)")
+    bedrooms_ax.set_xlabel("Bedrooms")
+    a, b = np.polyfit(bedrooms["Bedrooms"], bedrooms["Amount ($)"], 1)
+    bedrooms_ax.plot(
+        bedrooms["Bedrooms"],
+        a * bedrooms["Bedrooms"] + b,
+        color="darkred",
+        label="Trend",
+    )
+    lineofbestfit2 = f"Sale price = ${a:,.2f} * bedrooms + ${b:,.2f}"
+    bedrooms_ax.legend()
+        
+    bedrooms_buf = io.BytesIO()
+    bedrooms_fig.savefig(bedrooms_buf, format="png", bbox_inches="tight")
+    bedrooms_buf.seek(0)
+        
+    bedrooms_cost_base64 = base64.b64encode(bedrooms_buf.getvalue()).decode("utf-8")
 
     print("trends page")
     conn.close()
@@ -250,7 +311,9 @@ def trends():
         saledate_img=sale_date_cost_base64,
         oldestdate=oldestdate,
         timedelta=timedelta,
-        lineofbestfit=lineofbestfit
+        lineofbestfit1=lineofbestfit1,
+        bedrooms_cost_base64=bedrooms_cost_base64,
+        lineofbestfit2=lineofbestfit2
     )
 
 @app.route('/predictions')

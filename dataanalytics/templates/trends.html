@@ -97,14 +97,16 @@
     <div class="accordion-body">
       <p>See below a graph comparing the sale date vs the cost of real estate across the past {{ timedelta }} days, with the oldest sale date being {{ oldestdate }}.</p>
       <img class="img-fluid" src="data:image/png;base64,{{ saledate_img }}" alt="Sale Date v. Cost" style="min-height:400px; min-width:450px;">
-      <p style="font-size: small; font: monospace small-caps;">The line of best fit is: {{ lineofbestfit }}</p>
+      <p style="font-size: small; font: monospace small-caps;">The line of best fit is: {{ lineofbestfit1 }}</p>
     </div>
   </details>
 
   <details class="accordion-item" name="trends-accordion">
-    <summary class="accordion-header">Conclusion</summary>
+    <summary class="accordion-header">House specifics</summary>
     <div class="accordion-body">
-      .
+      <p>See below a graph comparing the number of bedrooms to the sale price.</p>
+      <img class="img-fluid" src="data:image/png;base64,{{ bedrooms_cost_base64 }}" alt="Bedrooms v. Cost" style="min-height:400px; min-width:450px;">
+      <p style="font-size: small; font: monospace small-caps;">The line of best fit is: {{ lineofbestfit2 }}</p>
     </div>
   </details>
 </div>
