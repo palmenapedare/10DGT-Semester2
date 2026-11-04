@@ -36,16 +36,68 @@
           </tbody>
         </table>
       </details>
-      <p>For houses above $1 million, the measures of centre regarding cost and landsize go up significantly.
-      </p>
+      <p>For houses above $1 million, the measures of centre regarding cost and landsize go up significantly.</p>
+      <table class="table table-striped-columns">
+        <colgroup>
+        <col style="width: 30%">
+        <col style="width: 35%">
+        <col style="width:35%">
+      </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">TOTAL</th>
+            <th scope="col">Mean</th>
+            <th scope="col">Median</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Land</th>
+            <td>{{ meanland }}</td>
+            <td>{{ medianland }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Cost</th>
+            <td>{{ meancost }}</td>
+            <td>{{ mediancost }}</td>
+            </tr>
+        </tbody>
+      </table>
+      <table class="table table-striped-columns">
+        <colgroup>
+        <col style="width: 30%">
+        <col style="width: 35%">
+        <col style="width:35%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">OVER 1 MILLION</th>
+            <th scope="col">Mean</th>
+            <th scope="col">Median</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Land</th>
+            <td>{{ millionmeanland if millionmeanland is not none else "N/A" }}</td>
+            <td>{{ millionmedianland if millionmedianland is not none else "N/A" }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Cost</th>
+            <td>{{ millionmeancost if millionmeancost is not none else "N/A" }}</td>
+            <td>{{ millionmediancost if millionmediancost is not none else "N/A" }}</td>
+            </tr>
+        </tbody>
+      </table>
     </div>
   </details>
 
   <details class="accordion-item" name="trends-accordion">
     <summary class="accordion-header">Time overview</summary>
     <div class="accordion-body">
-      <p style="font-size: small; font: monospace small-caps;">Hi</p>
-      <p>normal text</p>
+      <p>See below a graph comparing the sale date vs the cost of real estate across the past {{ timedelta }} days, with the oldest sale date being {{ oldestdate }}.</p>
+      <img class="img-fluid" src="data:image/png;base64,{{ saledate_img }}" alt="Sale Date v. Cost" style="min-height:400px; min-width:450px;">
+      <p style="font-size: small; font: monospace small-caps;">The line of best fit is: {{ lineofbestfit }}</p>
     </div>
   </details>
 

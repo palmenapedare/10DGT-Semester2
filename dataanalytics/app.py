@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 import re
 import statistics
@@ -116,6 +117,7 @@ def get_sales():
 
 @app.route('/trends')
 def trends():
+    ## SUBURB OVERVIEW
     conn = sqlite3.connect('real_estate.db')
     conn.row_factory = sqlite3.Row
     query = '''
@@ -149,6 +151,19 @@ def trends():
     '''
     above_million = conn.execute(query, (1_000_000,)).fetchall()
     count_above_million = len(above_million)
+    pricelist = [
+        int(row["Amount ($)"].replace("$", "").replace(",", ""))
+        for row in above_million
+    ]
+    landsizelist = [row["Land Size (m^2)"] for row in above_million]
+    if above_million:
+        millionmeancost =f"{sum(pricelist) / len(pricelist):,.2f}"
+        millionmediancost = f"{statistics.median(pricelist):,.2f}"
+        millionmeanland = f"{sum(landsizelist) / len(landsizelist):,.2f}"
+        millionmedianland = f"{statistics.median(landsizelist):,.2f}"
+    else:
+        millionmeancost = millionmediancost = None
+        millionmeanland = millionmedianland = None
 
     query = '''
         SELECT CAST(
@@ -158,16 +173,63 @@ def trends():
         FROM data AS d
     '''
     pricelist = [row[0] for row in conn.execute(query).fetchall()]
-    meancost = sum(pricelist)/len(pricelist)
-    mediancost = statistics.median(pricelist)
+    meancost = f"{sum(pricelist)/len(pricelist):,.2f}"
+    mediancost = f"{statistics.median(pricelist):,.2f}"
 
     query = '''
         SELECT d."Land size (m^2)" AS INTEGER
         FROM data AS d
     '''
     landsizelist = [row[0] for row in conn.execute(query).fetchall()]
-    meanland = sum(landsizelist)/len(landsizelist)
-    medianland = statistics.median(landsizelist)
+    meanland = f"{sum(landsizelist)/len(landsizelist):,.2f}"
+    medianland = f"{statistics.median(landsizelist):,.2f}"
+
+    ##TIME OVERVIEW
+    query = '''
+            SELECT
+                d."Sale date",
+                d."Amount ($)"
+            FROM data AS d
+            ORDER BY "Sale date" ASC
+        '''
+    with sqlite3.connect('real_estate.db') as conn:
+            database = pd.read_sql_query(query, conn)
+    database["Amount ($)"] = pd.to_numeric(
+            database["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+        )
+    database["Sale date"] = pd.to_datetime(database["Sale date"], format="%d-%m-%y")
+    database = database.sort_values("Sale date")
+    
+    date_fig = Figure()
+    FigureCanvasAgg(date_fig)
+    date_ax = date_fig.subplots()
+    date_ax.plot(database["Sale date"], database["Amount ($)"], label="Real Estate Sales", color="navy")
+    date_ax.tick_params(axis="x", labelrotation=45)
+    date_fig.tight_layout()
+    date_ax.set_title("Sale Date vs Amount")
+    date_ax.set_ylabel("Amount ($)")
+        #line of best fit via numpy, has to be converted from database["Sale date"]
+    sale_dates = database["Sale date"]
+    days_since_first_sale = (sale_dates - sale_dates.min()).dt.days
+    a, b = np.polyfit(days_since_first_sale, database["Amount ($)"], 1)
+    lineofbestfit = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
+    date_ax.plot(
+        sale_dates,
+        a * days_since_first_sale + b,
+        color="darkred",
+        label=f"Trend: y = {a:,.2f}x + {b:,.2f}",
+    )
+    date_ax.legend()
+    
+    saledate_buf = io.BytesIO()
+    date_fig.savefig(saledate_buf, format="png", bbox_inches="tight")
+    saledate_buf.seek(0)
+    
+    sale_date_cost_base64 = base64.b64encode(saledate_buf.getvalue()).decode("utf-8")
+
+    oldest_date = database["Sale date"].min().date()
+    oldestdate = oldest_date.strftime("%d-%m-%y")
+    timedelta = (datetime.today().date() - oldest_date).days
 
     print("trends page")
     conn.close()
@@ -180,7 +242,15 @@ def trends():
         mediancost=mediancost,
         meancost=meancost,
         medianland=medianland,
-        meanland=meanland
+        meanland=meanland,
+        millionmeancost=millionmeancost,
+        millionmediancost=millionmediancost,
+        millionmeanland=millionmeanland,
+        millionmedianland=millionmedianland,
+        saledate_img=sale_date_cost_base64,
+        oldestdate=oldestdate,
+        timedelta=timedelta,
+        lineofbestfit=lineofbestfit
     )
 
 @app.route('/predictions')
