@@ -3,18 +3,31 @@
 {% set title = "Predictor" %}
 {% block content %}
 
-<div class="main-container">
-  <div class="row">
+<form method="POST">
+<div class="main-container display-flex">
+  <div class="row" style="padding: 10px;">
     <div class="col">
-    <input type="text" id="floatingAddressvalue" class="form-control" placeholder="Address (street name)">
+    <input type="number" name="landsize" id="landsizeValue" class="form-control" placeholder="Land size">
     </div>
     <div class="col">
-    <input type="text" id="floatingPostcodevalue" class="form-control" placeholder="Postcode">
+    <input type="number" name="bedrooms" id="bedroomsValue" class="form-control" placeholder="Number of bedrooms">
+    </div>
+    <div class="col">
+    <input type="number" name="postcode" id="postcodeValue" class="form-control" maxlength="4" minlength="4" placeholder="Postcode">
+    <p style="font-variant: small-caps;">4 characters, as Aus standard</p>
     </div>
   </div>
-    <input type="text" id="floatingSuburb" class="form-control" placeholder="Suburb Name">
+  <div class="row" style="padding: 10px;">
+    <div class="col">
+    <input type="text" name="streetname" id="streetnameValue" class="form-control" placeholder="Street Name">
+    </div>
+    <div class="col">
+      <input type="date" name="saledate" id="saledateValue" class="form-control">
+    </div>
   </div>
-</div>
-</div>
-
+  <div class="row" style="padding:20px">
+    <button type="submit" class="theme-info btn-subtle" style="max-width: 20%; margin-inline: auto;">Submit</button>
+  </div>
+  </div>
+</form>
 {% endblock %}

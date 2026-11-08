@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 import re
 import statistics
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -23,6 +23,46 @@ conn.close()
 @app.route('/')
 def chart():
     return render_template('chart.html')
+
+def getlinesofbestfit():
+    conn = sqlite3.connect('real_estate.db')
+    query = '''
+        SELECT
+            d."Sale date",
+            d."Amount ($)"
+        FROM data AS d
+        ORDER BY "Sale date" ASC
+    '''
+    with sqlite3.connect('real_estate.db') as conn:
+        database = pd.read_sql_query(query, conn)
+    database["Amount ($)"] = pd.to_numeric(
+        database["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+    )
+    database["Sale date"] = pd.to_datetime(database["Sale date"], format="%d-%m-%y")
+    database = database.sort_values("Sale date")
+    
+    sale_dates = database["Sale date"]
+    days_since_first_sale = (sale_dates - sale_dates.min()).dt.days
+    a, b = np.polyfit(days_since_first_sale, database["Amount ($)"], 1)
+    lineofbestfitsaledate = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
+
+    query = '''SELECT d."Bedrooms", d."Amount ($)" from DATA as d ORDER BY "Bedrooms" ASC'''
+    bedrooms = pd.read_sql_query(query, conn)
+    bedrooms["Amount ($)"] = pd.to_numeric(
+        bedrooms["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+    )
+    a, b = np.polyfit(bedrooms["Bedrooms"], bedrooms["Amount ($)"], 1)
+    lineofbestfitbedrooms = f"Sale price = ${a:,.2f} * bedrooms + ${b:,.2f}"
+
+    query = '''SELECT d."Land size (m^2)", d."Amount ($)" from DATA as d ORDER BY "Land size (m^2)" ASC'''
+    landsize = pd.read_sql_query(query, conn)
+    landsize["Amount ($)"] = pd.to_numeric(
+        landsize["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+    )
+    a, b = np.polyfit(landsize["Land size (m^2)"], landsize["Amount ($)"], 1)
+    lineofbestfitlandsize = f"Sale price = ${a:,.2f} * land size + ${b:,.2f}"
+
+    return lineofbestfitsaledate, lineofbestfitbedrooms, lineofbestfitlandsize
 
 @app.route('/')
 def index():
@@ -241,7 +281,7 @@ def trends():
     sale_dates = database["Sale date"]
     days_since_first_sale = (sale_dates - sale_dates.min()).dt.days
     a, b = np.polyfit(days_since_first_sale, database["Amount ($)"], 1)
-    lineofbestfit1 = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
+    lineofbestfitsaledate = f"Sale price = ${a:,.2f} * days + ${b:,.2f}"
     date_ax.plot(
         sale_dates,
         a * days_since_first_sale + b,
@@ -287,7 +327,7 @@ def trends():
         color="darkred",
         label="Trend",
     )
-    lineofbestfit2 = f"Sale price = ${a:,.2f} * bedrooms + ${b:,.2f}"
+    lineofbestfitbedrooms = f"Sale price = ${a:,.2f} * bedrooms + ${b:,.2f}"
     bedrooms_ax.legend()
         
     bedrooms_buf = io.BytesIO()
@@ -315,15 +355,27 @@ def trends():
         saledate_img=sale_date_cost_base64,
         oldestdate=oldestdate,
         timedelta=timedelta,
-        lineofbestfit1=lineofbestfit1,
+        lineofbestfitsaledate=lineofbestfitsaledate,
         bedrooms_cost_base64=bedrooms_cost_base64,
-        lineofbestfit2=lineofbestfit2
+        lineofbestfitbedrooms=lineofbestfitbedrooms
     )
 
-@app.route('/predictions')
+@app.route('/predictions', methods=['GET', 'POST'])
 def predictions():
+    landsize = request.form.get("landsize")
+    bedrooms = request.form.get("bedrooms")
+    postcode = request.form.get("postcode")
+    streetname = request.form.get("streetname")
+    saledate = request.form.get("saledate")
+    lineofbestfitsaledate, lineofbestfitbedrooms, lineofbestfitlandsize = getlinesofbestfit()
+
     print("predictions")
-    return render_template('predictions.html')
+    return render_template(
+        'predictions.html',
+        lineofbestfitsaledate=lineofbestfitsaledate,
+        lineofbestfitbedrooms=lineofbestfitbedrooms,
+        lineofbestfitlandsize=lineofbestfitlandsize
+    )
 
 if __name__== '__main__':
     app.run(debug=True, port=8000)
