@@ -7,22 +7,35 @@
 <div class="main-container display-flex">
   <div class="row" style="padding: 10px;">
     <div class="col">
-    <input type="number" name="landsize" id="landsizeValue" class="form-control" placeholder="Land size">
+    <h4>Land size (square metres).</h4>
+      <input type="number" name="landsize" id="landsizeValue" class="form-control" placeholder="Land size" value="{{ landsize or '' }}">
+    {% if landsizenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a landsize value</p>
+{% endif %}
     </div>
     <div class="col">
-    <input type="number" name="bedrooms" id="bedroomsValue" class="form-control" placeholder="Number of bedrooms">
+      <h4>Bedroom number</h4>
+    <input type="number" name="bedrooms" id="bedroomsValue" class="form-control" placeholder="Number of bedrooms" value="{{ bedrooms or '' }}">
+    {% if bedroomsnull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a bedroom value</p>
+{% endif %}
     </div>
     <div class="col">
-    <input type="number" name="postcode" id="postcodeValue" class="form-control" maxlength="4" minlength="4" placeholder="Postcode">
+      <h4>Postcode</h4>
+    <input type="text" inputmode="numeric" name="postcode" id="postcodeValue" class="form-control" placeholder="Postcode" value="{{ postcode or '' }}">
     <p style="font-variant: small-caps;">4 characters, as Aus standard</p>
+    {% if postcodenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a postcode</p>
+{% endif %}
     </div>
   </div>
   <div class="row" style="padding: 10px;">
     <div class="col">
-    <input type="text" name="streetname" id="streetnameValue" class="form-control" placeholder="Street Name">
-    </div>
-    <div class="col">
-      <input type="date" name="saledate" id="saledateValue" class="form-control">
+      <h4>Sale date</h4>
+      <input type="date" name="saledate" id="saledateValue" class="form-control" value="{{ saledate or '' }}">
+      {% if saledatenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please select a saledate</p>
+{% endif %}
     </div>
   </div>
   <div class="row" style="padding:20px">
@@ -30,4 +43,31 @@
   </div>
   </div>
 </form>
+
+{% if error %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">{{ error }}</p>
+{% endif %}
+
+<div class="container display-flex">
+<div class="card" style="max-width: 500px; padding: 10px; justify-self: center;">
+  <div class="card-body">
+    <h4>PREDICTION</h4>
+    <p class="card-subtitle fg-3">Taking into account {{bedrooms}} bedrooms, a land size of {{landsize}} m^2, and a sale date of {{saledate}}</p>
+    {% if prediction is not none %}
+    <p class="card-text">PRICE: ${{ "{:,.2f}".format(prediction) }} AUD.</p>
+    {% endif %}
+    {% if correctpostcode is true %}
+    <p class="card-text">The postcode submitted, {{postcode}}, matches the majority of the postcodes in the database.</p>
+    <p class="card-text">This will make this prediction more accurate.</p>
+    {% endif %}
+    {% if correctpostcode is false %}
+    <p class="card-text">The postcode submitted, {{postcode}}, does not match the majority of the postcodes in the database.</p>
+    <p class="card-text">This will limit the accuracy of the prediction.</p>
+    {% endif %}
+    <p class="card-text"></p>
+    <a href="/">Return to home</a>
+  </div>
+</div>
+</div>
+
 {% endblock %}

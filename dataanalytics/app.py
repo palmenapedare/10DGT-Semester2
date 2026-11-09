@@ -1,3 +1,5 @@
+from collections import Counter
+from contextlib import closing
 from datetime import datetime
 from decimal import Decimal
 import re
@@ -54,12 +56,12 @@ def getlinesofbestfit():
     a, b = np.polyfit(bedrooms["Bedrooms"], bedrooms["Amount ($)"], 1)
     lineofbestfitbedrooms = f"Sale price = ${a:,.2f} * bedrooms + ${b:,.2f}"
 
-    query = '''SELECT d."Land size (m^2)", d."Amount ($)" from DATA as d ORDER BY "Land size (m^2)" ASC'''
+    query = '''SELECT d."Land Size (m^2)", d."Amount ($)" from DATA as d ORDER BY "Land Size (m^2)" ASC'''
     landsize = pd.read_sql_query(query, conn)
     landsize["Amount ($)"] = pd.to_numeric(
         landsize["Amount ($)"].str.replace(r"[$,]", "", regex=True)
     )
-    a, b = np.polyfit(landsize["Land size (m^2)"], landsize["Amount ($)"], 1)
+    a, b = np.polyfit(landsize["Land Size (m^2)"], landsize["Amount ($)"], 1)
     lineofbestfitlandsize = f"Sale price = ${a:,.2f} * land size + ${b:,.2f}"
 
     return lineofbestfitsaledate, lineofbestfitbedrooms, lineofbestfitlandsize
@@ -362,19 +364,97 @@ def trends():
 
 @app.route('/predictions', methods=['GET', 'POST'])
 def predictions():
-    landsize = request.form.get("landsize")
-    bedrooms = request.form.get("bedrooms")
-    postcode = request.form.get("postcode")
-    streetname = request.form.get("streetname")
-    saledate = request.form.get("saledate")
-    lineofbestfitsaledate, lineofbestfitbedrooms, lineofbestfitlandsize = getlinesofbestfit()
+    land_size_input = request.form.get("landsize", "")
+    bedrooms_input = request.form.get("bedrooms", "")
+    postcode_input = request.form.get("postcode", "")
+    sale_date_input = request.form.get("saledate", "")
+    prediction = None
+    error = None
+    landsizenull = False
+    bedroomsnull = False
+    postcodenull = False
+    saledatenull = False
 
-    print("predictions")
+    query = '''SELECT "Suburb" FROM data WHERE "Suburb" IS NOT NULL'''
+    with closing(sqlite3.connect("real_estate.db")) as conn:
+        suburbs = [str(row[0]) for row in conn.execute(query).fetchall()]
+    if postcode_input == str(statistics.mode(suburbs)):
+        correctpostcode = True
+    else:
+        correctpostcode = False
+
+    if request.method == 'POST':
+        landsizenull = not land_size_input
+        bedroomsnull = not bedrooms_input
+        postcodenull = not postcode_input
+        saledatenull = not sale_date_input
+
+        if not postcode_input.isdigit() or len(postcode_input) != 4:
+            error = "Enter a 4-digit postcode."
+        elif not land_size_input or not bedrooms_input or not sale_date_input:
+            error = "Enter a sale date, number of bedrooms, and land size to get a prediction."
+        else:
+            try:
+                land_size_value = float(land_size_input)
+                bedrooms_value = float(bedrooms_input)
+                selected_date = pd.to_datetime(sale_date_input, format="%Y-%m-%d")
+            except ValueError:
+                error = "Enter valid numeric values for bedrooms and land size, and a valid sale date."
+            else:
+                prediction = predictionscalc(
+                    land_size_value,
+                    bedrooms_value,
+                    selected_date
+                )
+
     return render_template(
         'predictions.html',
-        lineofbestfitsaledate=lineofbestfitsaledate,
-        lineofbestfitbedrooms=lineofbestfitbedrooms,
-        lineofbestfitlandsize=lineofbestfitlandsize
+        landsize=land_size_input,
+        bedrooms=bedrooms_input,
+        postcode=postcode_input,
+        saledate=sale_date_input,
+        prediction=prediction,
+        error=error,
+        correctpostcode=correctpostcode,
+        landsizenull=landsizenull,
+        bedroomsnull=bedroomsnull,
+        postcodenull=postcodenull,
+        saledatenull=saledatenull,
+    )
+
+
+def predictionscalc(land_size_value, bedrooms_value, selected_date):
+    query = '''
+        SELECT "Sale date", "Bedrooms", "Land Size (m^2)", "Amount ($)"
+        FROM data
+    '''
+    with sqlite3.connect('real_estate.db') as conn:
+        sales = pd.read_sql_query(query, conn)
+
+    sales["Sale date"] = pd.to_datetime(sales["Sale date"], format="%d-%m-%y")
+    sales["Amount ($)"] = pd.to_numeric(
+        sales["Amount ($)"].str.replace(r"[$,]", "", regex=True)
+    )
+    first_sale_date = sales["Sale date"].min()
+    days_since_first_sale = (sales["Sale date"] - first_sale_date).dt.days
+    days_to_predict = (selected_date - first_sale_date).days
+
+    variables = np.column_stack((
+        np.ones(len(sales)),
+        days_since_first_sale,
+        sales["Bedrooms"],
+        sales["Land Size (m^2)"]
+    ))
+
+    intercept, date_coefficient, bedroom_coefficient, land_size_coefficient = np.linalg.lstsq(
+        variables, sales["Amount ($)"], rcond=None
+    )[0]
+
+    return (
+        intercept
+        + date_coefficient * days_to_predict
+        + bedroom_coefficient * bedrooms_value
+        + land_size_coefficient * land_size_value
     )
 
 if __name__== '__main__':
