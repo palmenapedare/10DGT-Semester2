@@ -20,8 +20,109 @@
   </p>
 </div>
 <div class="alert theme-success" role="alert" style="margin:12px;">
-  <p>PREDICTOR PAGE: Input of various variables to produce an estimate of price.</p>
+  <p>PREDICTOR PAGE: Input various variables to produce an estimate of price.</p>
 </div>
 </div>
 
+<div class="container" style="display: flex; justify-content: center; align-items: center;">
+  <div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
+    <h2>Houses Search</h2>
+    <div class="d-flex flex-wrap gap-3">
+      <label>Price range:
+          <input id="priceMin" type="number" placeholder="Min $" oninput="filterRange(2, 'priceMin', 'priceMax')">
+          <input id="priceMax" type="number" placeholder="Max $" oninput="filterRange(2, 'priceMin', 'priceMax')">
+      </label>
+      <label>Land size range:
+        <input id="landMin" type="number" placeholder="Min m²" oninput="filterRange(4, 'landMin', 'landMax')">
+        <input id="landMax" type="number" placeholder="Max m²" oninput="filterRange(4, 'landMin', 'landMax')">
+      </label>
+      <input type="text" id="postcodesearch" onkeyup="postcodeSearch()" placeholder="Search postcode...">
+    </div>
+  </div>
+</div>
+
+<div class="container py-1" style="width: 100rem">
+  <button class="btn btn-orange d-inline-flex gap-2" data-bs-toggle="collapse" data-bs-target="#1collapse" role="button" aria-expanded="false" aria-controls="collapse1">Property listings</button>
+  <div id="1collapse" class="collapse">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle" id="housetable">
+        <thead>
+          <tr>
+            <th>House Address</th>
+            <th>Sale date</th>
+            <th>Amount ($)</th>
+            <th>Bedrooms</th>
+            <th>Land size (m^2)</th>
+            <th>Suburb postcode</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for house in database %}
+          <tr>
+            <td>{{ house[0] }}</td>
+            <td>{{ house[1] }}</td>
+            <td>{{ house[2] }}</td>
+            <td>{{ house[3] }}</td>
+            <td>{{ house[4] }}</td>
+            <td>{{ house[5] }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6">No houses found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterTable(inputId, columnIndex) {
+  var input = document.getElementById(inputId);
+  var filter = (input ? input.value : '').trim().toUpperCase();
+  var table = document.getElementById('housetable');
+  var rows = table.getElementsByTagName('tr');
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    var cells = row.getElementsByTagName('td');
+    var cell = cells[columnIndex];
+    var txtValue = cell ? (cell.textContent || cell.innerText) : '';
+
+    row.style.display = (!filter || txtValue.toUpperCase().indexOf(filter) > -1) ? '' : 'none';
+  }
+}
+
+function housesSearch() {
+  filterTable('housesearch', 0);
+}
+
+function landsizeSearch() {
+  filterTable('landsizesearch', 4);
+}
+
+function amountSearch() {
+  filterTable('amountsearch', 2);
+}
+
+function postcodeSearch() {
+  filterTable('postcodesearch', 5);
+}
+
+function filterRange(columnIndex, minId, maxId) {
+  var min = document.getElementById(minId).value;
+  var max = document.getElementById(maxId).value;
+  var rows = document.getElementById('housetable').getElementsByTagName('tr');
+
+  for (var i = 1; i < rows.length; i++) {
+    var cell = rows[i].getElementsByTagName('td')[columnIndex];
+    if (!cell) continue;
+
+    var value = Number(cell.textContent.replace(/[$,]/g, '').trim());
+    rows[i].style.display =
+      (!min || value >= Number(min)) && (!max || value <= Number(max)) ? '' : 'none';
+  }
+}
+</script>
 {% endblock %}

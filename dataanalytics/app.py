@@ -23,10 +23,6 @@ conn = sqlite3.connect('real_estate.db')
 df.to_sql(name='data', con=conn, if_exists="replace", index=False)
 conn.close()
 
-@app.route('/')
-def chart():
-    return render_template('chart.html')
-
 def getlinesofbestfit():
     conn = sqlite3.connect('real_estate.db')
     query = '''
@@ -77,7 +73,8 @@ def index():
             d."Sale date",
             d."Amount ($)",
             d."Bedrooms",
-            d."Land Size (m^2)"
+            d."Land Size (m^2)",
+            d."Suburb"
         FROM data AS d
         ORDER BY "Sale date" DESC
     '''
