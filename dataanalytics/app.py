@@ -521,10 +521,14 @@ def data():
                     with closing(sqlite3.connect('real_estate.db')) as conn:
                         conn.execute(query, addedvalues)
                         conn.commit()
-                    return "Data added successfully."
+                    return render_template('datasuccess.html', addedvalues=addedvalues)
         return error, 400
 
     return render_template('data.html')
+
+@app.route('/datasuccess')
+def datasuccess(addedvalues):
+    return render_template('datasuccess.html', addedvalues=addedvalues)
 
 if __name__== '__main__':
     app.run(debug=True, port=8000)

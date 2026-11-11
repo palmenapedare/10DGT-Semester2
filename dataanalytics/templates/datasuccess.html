@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% set title = "Data adder was successful" %}
+{% block content %}
+
+<div class="card" style="max-width: 5000px;">
+  <div class="card-body">
+    <h4 class="card-title">Data added to the CSV and the database was successful!</h4>
+    <p class="card-subtitle fg-3">See data below</p>
+    <a class="card-text" href="/">Return to homepage</a>
+    <a href="/data">Return to data adder</a>
+    <table>
+        <thead>
+            <th>House Address</th>
+            <th>Sale date</th>
+            <th>Amount ($)</th>
+            <th>Bedrooms</th>
+            <th>Land size (m^2)</th>
+            <th>Suburb postcode</th>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ addedvalues[0] }}</td>
+            <td>{{ addedvalues[1] }}</td>
+            <td>{{ addedvalues[2] }}</td>
+            <td>{{ addedvalues[3] }}</td>
+            <td>{{ addedvalues[4] }}</td>
+            <td>{{ addedvalues[5] }}</td>
+          </tr>
+          </tbody>
+    </table>
+  </div>
+</div>
+
+
+{% endblock %}
