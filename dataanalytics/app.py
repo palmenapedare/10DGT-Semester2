@@ -1,7 +1,8 @@
 from collections import Counter
 from contextlib import closing
+import csv
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import re
 import statistics
 from flask import Flask, render_template, request
@@ -422,7 +423,6 @@ def predictions():
         saledatenull=saledatenull,
     )
 
-
 def predictionscalc(land_size_value, bedrooms_value, selected_date):
     query = '''
         SELECT "Sale date", "Bedrooms", "Land Size (m^2)", "Amount ($)"
@@ -456,6 +456,78 @@ def predictionscalc(land_size_value, bedrooms_value, selected_date):
         + bedroom_coefficient * bedrooms_value
         + land_size_coefficient * land_size_value
     )
+
+@app.route('/data', methods=['GET', 'POST'])
+def data():
+    address_input = request.form.get("address", "").strip()
+    land_size_input = request.form.get("landsize", "")
+    house_price_input = request.form.get("houseamount", "")
+    bedrooms_input = request.form.get("bedroomsamount", "")
+    postcode_input = request.form.get("postcode", "")
+    sale_date_input = request.form.get("saledate", "")
+    error = None
+    addressnull = not address_input
+    landsizenull = not land_size_input
+    houseamountnull = not house_price_input
+    bedroomsamountnull = not bedrooms_input
+    postcodenull = not postcode_input
+    saledatenull = not sale_date_input
+
+    if request.method == 'POST':
+        if any((addressnull, landsizenull, houseamountnull, bedroomsamountnull, postcodenull, saledatenull)):
+            error = "Complete all fields."
+        elif not postcode_input.isdigit() or len(postcode_input) != 4:
+            error = "Enter a 4-digit postcode."
+        else:
+            try:
+                land_size_value = Decimal(land_size_input)
+                house_price_value = Decimal(house_price_input)
+                bedrooms_value = int(bedrooms_input)
+                sale_date_input_obj = datetime.strptime(sale_date_input, "%Y-%m-%d")
+            except (InvalidOperation, ValueError):
+                error = "The inputs are invalid."
+            else:
+                if not land_size_value.is_finite() or not house_price_value.is_finite():
+                    error = "The inputs are invalid."
+                else:
+                    new_sale_date = sale_date_input_obj.strftime("%d-%m-%y")
+                    house_price_input = f"${house_price_value:,.0f}"
+                    land_size_input = f"{land_size_value:,.2f}"
+                    with open('data.csv', mode='ab+') as f:
+                        f.seek(0, 2)
+                        if f.tell() > 0:
+                            f.seek(-1, 2)
+                            if f.read(1) != b'\n':
+                                f.seek(0, 2)
+                                f.write(b'\n')
+                    with open('data.csv', mode='a', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow([
+                            address_input,
+                            new_sale_date,
+                            house_price_input,
+                            bedrooms_value,
+                            land_size_input,
+                            postcode_input,
+                        ])
+                    query = '''INSERT INTO data
+                    ("Address", "Sale date", "Amount ($)", "Bedrooms", "Land Size (m^2)", "Suburb")
+                    VALUES (?, ?, ?, ?, ?, ?)'''
+                    addedvalues = (
+                        address_input,
+                        new_sale_date,
+                        house_price_input,
+                        bedrooms_value,
+                        land_size_input,
+                        postcode_input,
+                    )
+                    with closing(sqlite3.connect('real_estate.db')) as conn:
+                        conn.execute(query, addedvalues)
+                        conn.commit()
+                    return "Data added successfully."
+        return error, 400
+
+    return render_template('data.html')
 
 if __name__== '__main__':
     app.run(debug=True, port=8000)

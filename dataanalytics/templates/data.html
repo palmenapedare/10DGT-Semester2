@@ -1,1 +1,60 @@
-<!-- adds data to the csv? -->
+{% extends "layout.html" %}
+{% set title = "Data adder" %}
+{% block content %}
+
+<form method="POST">
+<div class="main-container display-flex">
+  <div class="row" style="padding: 10px;">
+    <div class="col">
+    <h4>Street address</h4>
+      <input type="text" name="address" id="addressValue" class="form-control" placeholder="Address (e.g. 1A Name Road)" value="{{ address or '' }}">
+    {% if addressnull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter an address value</p>
+{% endif %}
+    </div>
+    <div class="col">
+      <h4>Land size</h4>
+    <input type="integer" name="landsize" id="landsizeValue" class="form-control" placeholder="Land size of property" value="{{ landsize or '' }}">
+    {% if landsizenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a land size value</p>
+{% endif %}
+    </div>
+    <div class="col">
+      <h4>Amount</h4>
+    <input type="integer" name="houseamount" id="houseamountValue" class="form-control" placeholder="Amount" value="{{ amount or '' }}">
+    <p style="font-variant: small-caps;">4 characters, as Aus standard</p>
+    {% if houseamountnull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a house price</p>
+{% endif %}
+    </div>
+  </div>
+  <div class="row" style="padding: 10px;">
+    <div class="col">
+      <h4>Sale date</h4>
+      <input type="date" name="saledate" id="saledateValue" class="form-control" value="{{ saledate or '' }}">
+      {% if saledatenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please select a saledate</p>
+{% endif %}
+    </div>
+    <div class="col">
+      <h4>Bedrooms</h4>
+    <input type="integer" name="bedroomsamount" id="bedroomsamountValue" class="form-control" placeholder="Number of bedrooms" value="{{ bedroomsamount or '' }}">
+    {% if bedroomsamountnull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a number of bedrooms</p>
+{% endif %}
+    </div>
+        <div class="col">
+      <h4>Postcode</h4>
+    <input type="integer" name="postcode" id="postcodeValue" class="form-control" placeholder="Postcode" value="{{ postcode or '' }}">
+    <p style="font-variant: small-caps;">4 characters, as Aus standard</p>
+    {% if postcodenull %}
+<p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a house price</p>
+{% endif %}
+  </div>
+  <div class="row" style="padding:20px">
+    <button type="submit" class="theme-info btn-subtle" style="max-width: 20%; margin-inline: auto;">Submit</button>
+  </div>
+  </div>
+</form>
+
+{% endblock %}
