@@ -5,28 +5,40 @@
 <form method="POST">
 <div class="main-container display-flex">
   <div class="row" style="padding: 10px;">
+    
     <div class="col">
     <h4>Street address</h4>
       <input type="text" name="address" id="addressValue" class="form-control" placeholder="Address (e.g. 1A Name Road)" value="{{ address or '' }}">
     {% if addressnull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter an address value</p>
 {% endif %}
-    </div>
-    <div class="col">
-      <h4>Land size</h4>
+</div>
+
+<div class="col">
+    <h4>Land size</h4>
+    <div class="input-group">
     <input type="integer" name="landsize" id="landsizeValue" class="form-control" placeholder="Land size of property" value="{{ landsize or '' }}">
+      <span class="input-group-text">m^2</span>
+</div>
     {% if landsizenull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a land size value</p>
 {% endif %}
-    </div>
-    <div class="col">
-      <h4>Amount</h4>
+</div>
+
+<div class="col">
+  <h4>Amount</h4>
+<div class="input-group">
+      <span class="input-group-text">$</span>
     <input type="integer" name="houseamount" id="houseamountValue" class="form-control" placeholder="Amount" value="{{ amount or '' }}">
+  <span class="input-group-text">AUD</span>  
+  </div>
     {% if houseamountnull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a house price</p>
 {% endif %}
-    </div>
-  </div>
+</div>
+
+</div>
+
   <div class="row" style="padding: 10px;">
     <div class="col">
       <h4>Sale date</h4>
@@ -34,26 +46,46 @@
       {% if saledatenull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please select a saledate</p>
 {% endif %}
-    </div>
-    <div class="col">
+</div>
+
+<div class="col">
       <h4>Bedrooms</h4>
     <input type="integer" name="bedroomsamount" id="bedroomsamountValue" class="form-control" placeholder="Number of bedrooms" value="{{ bedroomsamount or '' }}">
     {% if bedroomsamountnull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a number of bedrooms</p>
 {% endif %}
-    </div>
-        <div class="col">
+</div>
+
+<div class="col">
       <h4>Postcode</h4>
     <input type="integer" name="postcode" id="postcodeValue" class="form-control" placeholder="Postcode" value="{{ postcode or '' }}">
     <p style="font-variant: small-caps;">4 characters, as Aus standard</p>
     {% if postcodenull %}
 <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">Please enter a house price</p>
 {% endif %}
-  </div>
-  <div class="row" style="padding:20px">
+</div>
+
+<div class="row" style="padding:20px">
     <button type="submit" class="theme-info btn-subtle" style="max-width: 20%; margin-inline: auto;">Submit</button>
   </div>
   </div>
 </form>
+</div>
+
+<div class="main-container display-flex">
+  <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label for="uploadFile" class="form-label">Input a CSV</label>
+      <input class="form-control" type="file" id="uploadFile" name="files" accept=".csv,text/csv" multiple required>
+    </div>
+    {% if upload_error %}
+    <p role="alert" class="alert theme-warning" style="padding: 10px; margin: 20px;">{{ upload_error }}</p>
+    {% endif %}
+    {% if upload_success %}
+    <p role="status" class="alert theme-info" style="padding: 10px; margin: 20px;">{{ upload_success }}</p>
+    {% endif %}
+    <button type="submit" class="theme-info btn-subtle" style="max-width: 20%; margin-inline: auto;">Submit</button>
+  </form>
+</div>
 
 {% endblock %}

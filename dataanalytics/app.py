@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 import re
 import statistics
+from pathlib import Path
 from flask import Flask, render_template, request
 import sqlite3
 import pandas as pd
@@ -14,14 +15,19 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 import io
 import base64
+from distutils.log import debug
+from flask import *
+from werkzeug.utils import secure_filename
 
 #DB Generator
 app = Flask(__name__)
-df = pd.read_csv("data.csv")
-print(df)
-conn = sqlite3.connect('real_estate.db')
-df.to_sql(name='data', con=conn, if_exists="replace", index=False)
-conn.close()
+app.config["UPLOAD_FOLDER"] = str(Path(app.root_path) / "uploads")
+data_path = Path(app.config["UPLOAD_FOLDER"]) / "data.csv"
+if data_path.is_file():
+    df = pd.read_csv(data_path)
+    print(df)
+    with sqlite3.connect("real_estate.db") as conn:
+        df.to_sql(name="data", con=conn, if_exists="replace", index=False)
 
 def getlinesofbestfit():
     conn = sqlite3.connect('real_estate.db')
@@ -456,6 +462,7 @@ def predictionscalc(land_size_value, bedrooms_value, selected_date):
 
 @app.route('/data', methods=['GET', 'POST'])
 def data():
+    #INDIVIDUAL DATA ENTRY
     address_input = request.form.get("address", "").strip()
     land_size_input = request.form.get("landsize", "")
     house_price_input = request.form.get("houseamount", "")
@@ -490,14 +497,14 @@ def data():
                     new_sale_date = sale_date_input_obj.strftime("%d-%m-%y")
                     house_price_input = f"${house_price_value:,.0f}"
                     land_size_input = f"{land_size_value:,.2f}"
-                    with open('data.csv', mode='ab+') as f:
+                    with data_path.open(mode='ab+') as f:
                         f.seek(0, 2)
                         if f.tell() > 0:
                             f.seek(-1, 2)
                             if f.read(1) != b'\n':
                                 f.seek(0, 2)
                                 f.write(b'\n')
-                    with open('data.csv', mode='a', newline='') as f:
+                    with data_path.open(mode='a', newline='') as f:
                         writer = csv.writer(f)
                         writer.writerow([
                             address_input,
@@ -526,9 +533,54 @@ def data():
 
     return render_template('data.html')
 
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    uploaded_files = [
+        uploaded_file
+        for uploaded_file in request.files.getlist('files')
+        if uploaded_file.filename
+    ]
+    if not uploaded_files:
+        return render_template('data.html', upload_error="Please choose a CSV file."), 400
+
+    files_to_save = []
+    filenames = set()
+    for uploaded_file in uploaded_files:
+        filename = secure_filename(uploaded_file.filename)
+        if not filename or Path(filename).suffix.lower() != '.csv':
+            return render_template('data.html', upload_error="Please choose CSV files only."), 400
+        if filename.casefold() == "data.csv":
+            return render_template(
+                'data.html',
+                upload_error="Please use a different name; data.csv is the combined file.",
+            ), 400
+        if filename.casefold() in filenames:
+            return render_template(
+                'data.html',
+                upload_error="Each selected file must have a unique filename.",
+            ), 400
+        filenames.add(filename.casefold())
+        files_to_save.append((uploaded_file, filename))
+
+    upload_folder = Path(app.config["UPLOAD_FOLDER"])
+    upload_folder.mkdir(parents=True, exist_ok=True)
+    master_path = upload_folder / "data.csv"
+    frames = [pd.read_csv(master_path)] if master_path.is_file() else []
+    for uploaded_file, filename in files_to_save:
+        uploaded_file.save(upload_folder / filename)
+        frames.append(pd.read_csv(upload_folder / filename))
+
+    df_combined = pd.concat(frames, ignore_index=True)
+    df_combined.to_csv(master_path, index=False)
+
+    return render_template(
+        'data.html',
+        upload_success=f"Uploaded and merged {', '.join(filename for _, filename in files_to_save)}.",
+    )
+
 @app.route('/datasuccess')
 def datasuccess(addedvalues):
     return render_template('datasuccess.html', addedvalues=addedvalues)
 
 if __name__== '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True)

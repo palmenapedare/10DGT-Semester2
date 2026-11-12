@@ -28,15 +28,17 @@
   <div class="card mb-5" style="margin: 20px; padding: 20px; width: 100rem">
     <h2>Houses Search</h2>
     <div class="d-flex flex-wrap gap-3">
-      <label>Price range:
+      <label>Price range: 
           <input id="priceMin" type="number" placeholder="Min $" oninput="filterRange(2, 'priceMin', 'priceMax')">
           <input id="priceMax" type="number" placeholder="Max $" oninput="filterRange(2, 'priceMin', 'priceMax')">
       </label>
-      <label>Land size range:
-        <input id="landMin" type="number" placeholder="Min m²" oninput="filterRange(4, 'landMin', 'landMax')">
-        <input id="landMax" type="number" placeholder="Max m²" oninput="filterRange(4, 'landMin', 'landMax')">
+      <label style="margin-left: 10px">Land size range: 
+        <input id="landMin" type="number" placeholder="Min m^2" oninput="filterRange(4, 'landMin', 'landMax')">
+        <input id="landMax" type="number" placeholder="Max m^2" oninput="filterRange(4, 'landMin', 'landMax')">
       </label>
-      <input type="text" id="postcodesearch" onkeyup="postcodeSearch()" placeholder="Search postcode...">
+      <label style="margin-left: 10px">Search postcode: 
+      <input type="text" id="postcodesearch" onkeyup="postcodeSearch()" placeholder="Postcode">
+      </label>
     </div>
   </div>
 </div>
