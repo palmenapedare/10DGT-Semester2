@@ -573,6 +573,21 @@ def upload_file():
     df_combined = pd.concat(frames, ignore_index=True)
     df_combined.to_csv(master_path, index=False)
 
+    with sqlite3.connect("real_estate.db") as conn:
+        query = '''INSERT INTO data ("Address", "Sale date", "Amount ($)", "Bedrooms", "Land Size (m^2)", "Suburb") VALUES (?, ?, ?, ?, ?, ?)'''
+        for i in files_to_save:
+            df = pd.read_csv(upload_folder / i[1])
+            for _, row in df.iterrows():
+                conn.execute(query, (
+                    row["Address"],
+                    row["Sale date"],
+                    row["Amount ($)"],
+                    row["Bedrooms"],
+                    row["Land Size (m^2)"],
+                    row["Suburb"]
+                ))
+        conn.commit()
+
     return render_template(
         'data.html',
         upload_success=f"Uploaded and merged {', '.join(filename for _, filename in files_to_save)}.",
